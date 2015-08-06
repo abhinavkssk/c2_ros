@@ -20,10 +20,10 @@ void Mission::clear()
 	m_legs.clear();
 }
 
-c2_ros::MissionLeg Mission::get(int num)
+const c2_ros::MissionLeg *Mission::get(int num)
 {
 	if (num >=0 && num < m_legs.size())
-		return m_legs[num];
+		return &m_legs[num];
 	else
 		return nullptr;
 }

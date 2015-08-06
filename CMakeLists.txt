@@ -1,10 +1,13 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(c2_ros)
 
+set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  asco_utils REQUIRED
   roscpp
   rospy
   std_msgs
@@ -48,16 +51,15 @@ find_package(catkin REQUIRED COMPONENTS
  add_message_files(
    FILES
    C2_BHV.msg
-   C2_CMD.msg
    MissionLeg.msg
  )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
+ add_service_files(
+   FILES
+   C2_CMD.srv
 #   Service2.srv
-# )
+ )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -83,9 +85,10 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
+  ${asco_utils_INCLUDE_DIRS}
 #  LIBRARIES c2_ros
 #  CATKIN_DEPENDS roscpp rospy std_msgs
-#  DEPENDS system_lib
+  DEPENDS system_lib
 )
 
 ###########
@@ -96,25 +99,24 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
-# add_library(c2_ros
-#   src/${PROJECT_NAME}/c2_ros.cpp
-# )
+ add_library(c2_ros
+   src/mission.cpp
+)
 
 ## Declare a cpp executable
-# add_executable(c2_ros_node src/c2_ros_node.cpp)
+add_executable(captain_node src/captain.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(c2_ros_node c2_ros_generate_messages_cpp)
+ add_dependencies(c2_ros c2_ros_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(c2_ros_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(captain_node ${catkin_LIBRARIES} c2_ros)
 
 #############
 ## Install ##

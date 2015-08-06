@@ -16,7 +16,7 @@ public:
 	void add(c2_ros::MissionLeg ml);
 	int getMissionLegCount();
 	void clear();
-	c2_ros::MissionLeg get(int num);
+	const c2_ros::MissionLeg *get(int num);
 };
 
 }
