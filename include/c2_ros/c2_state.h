@@ -12,7 +12,7 @@ enum class C2_STATE {
 	ERROR
 };
 
-static const char* C2_StateName[] = { "INIT", "RUN", "STANDBY", "ABORT" };
+static const char* C2_StateName[] = { "INIT", "RUN", "STANDBY", "ABORT", "ERROR" };
 
 }
 #endif //C2_STATE_H_

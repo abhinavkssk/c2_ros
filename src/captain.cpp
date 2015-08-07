@@ -12,9 +12,14 @@
 #include "c2_ros/c2_state.h"
 #include "c2_ros/MissionLeg.h"
 
+#include <actionlib/client/simple_action_client.h>
+#include <c2_ros/MissionLegAction.h>
+
 c2_ros::C2_BHV bhv;
 
 using C2::C2_STATE;
+
+typedef actionlib::SimpleActionClient<c2_ros::MissionLegAction> ML_Client;
 
 class Captain
 {
@@ -26,11 +31,14 @@ protected:
 
 	ros::ServiceServer srv_cmd;
 
+	ML_Client c_waypoint, c_abort, c_lawnmow, c_adaptivesampling;
 
 private:
 	C2::Mission curMission;
+	const c2_ros::MissionLeg* curMissionLeg;
 	C2_STATE myState;
 	c2_ros::C2_CMD receivedCmd;
+	int m_leg_cnt;
 
 	bool loadMissionFile(){
 
@@ -125,6 +133,9 @@ private:
 				if(!loadMissionFile()){
 					setMyState(C2_STATE::ERROR);
 					return false;
+				}else{
+					//reset m_leg_cnt
+					m_leg_cnt = 0;
 				}
 			}
 
@@ -141,6 +152,22 @@ private:
 		return true;
 	}
 
+	void run(){
+		if(m_leg_cnt < curMission.getMissionLegCount()){
+			curMissionLeg = curMission.get(m_leg_cnt);
+			m_leg_cnt++;
+
+			//debug: print out all the mission legs
+			ROS_INFO("bhv:[%d],lat:[%f],lon:[%f],heading:[%f],mpoint_rad:[%f]",curMissionLeg->m_bhv.bhv,curMissionLeg->lat,curMissionLeg->lon,curMissionLeg->heading,curMissionLeg->mission_pt_radius );
+
+		}else if(m_leg_cnt == curMission.getMissionLegCount()){
+			ROS_INFO("Mission Completed");
+			setMyState(C2_STATE::STANDBY);
+		}else{
+			ROS_WARN("Error in mission leg count");
+			setMyState(C2_STATE::ERROR);
+		}
+	}
 public:
 	bool request_cmd_callback(c2_ros::C2_CMD::Request& request,
 			c2_ros::C2_CMD::Response& response)
@@ -162,9 +189,83 @@ public:
 		return result;
 	}
 
-	Captain(std::string name, ros::NodeHandle nh): myState(C2_STATE::INIT),nh_(nh) {
+	void goal_result_callback(const actionlib::SimpleClientGoalState& state,
+			const c2_ros::MissionLegResultConstPtr& result)
+	{
+
+	}
+
+	void goal_active_callback()
+	{
+
+	}
+
+	void goal_feedback_callback(const c2_ros::MissionLegFeedbackConstPtr& feedback)
+	{
+
+	}
+
+	bool contactServers(){
+		if(!c_waypoint.waitForServer(ros::Duration(5,0))){
+			ROS_WARN("Timeout contacting c_waypoint server");
+			return false;
+		}
+		if(!c_abort.waitForServer(ros::Duration(5,0))){
+			ROS_WARN("Timeout contacting c_abort server");
+			return false;
+		}
+		if(!c_lawnmow.waitForServer(ros::Duration(5,0))){
+			ROS_WARN("Timeout contacting c_lawnmow server");
+			return false;
+		}
+		if(!c_adaptivesampling.waitForServer(ros::Duration(5,0))){
+			ROS_WARN("Timeout contacting c_adaptivesampling server");
+			return false;
+		}
+
+		return true;
+	}
+
+	void sendGoal(c2_ros::MissionLeg ml){
+		c2_ros::MissionLegGoal goal;
+		goal.m_leg = ml;
+
+		if(ml.m_bhv.bhv == bhv.WAY_POINT){
+			c_waypoint.sendGoal(goal,
+					boost::bind(&Captain::goal_result_callback, this, _1,_2),
+					boost::bind(&Captain::goal_active_callback,this),
+					boost::bind(&Captain::goal_feedback_callback,this,_1));
+		}else if (ml.m_bhv.bhv == bhv.LAWNMOW){
+			c_lawnmow.sendGoal(goal,
+					boost::bind(&Captain::goal_result_callback, this, _1,_2),
+					boost::bind(&Captain::goal_active_callback,this),
+					boost::bind(&Captain::goal_feedback_callback,this,_1));
+		}else if (ml.m_bhv.bhv == bhv.ADAPTIVE_SAMPLING){
+			c_adaptivesampling.sendGoal(goal,
+					boost::bind(&Captain::goal_result_callback, this, _1,_2),
+					boost::bind(&Captain::goal_active_callback,this),
+					boost::bind(&Captain::goal_feedback_callback,this,_1));
+		}
+	}
+
+	Captain(std::string name, ros::NodeHandle nh):
+		myState(C2_STATE::INIT),
+		nh_(nh),
+		m_leg_cnt(0),
+		curMissionLeg(nullptr),
+		//declare the clients
+		c_waypoint("WayPoint",true),
+		c_abort("Abort",true),
+		c_lawnmow("LawnMow",true),
+		c_adaptivesampling("AdaptiveSampling",true) {
+
 		//advertise service
 		srv_cmd = nh_.advertiseService("captain",&Captain::request_cmd_callback,this);
+
+		//make sure all the server exist, or else report error
+		if(!contactServers())
+			setMyState(C2_STATE::ERROR);
+
 
 	}
 
@@ -178,6 +279,7 @@ public:
 			setMyState(C2_STATE::STANDBY);
 			break;
 		case C2_STATE::RUN:
+			run();
 			break;
 		case C2_STATE::STANDBY:
 			break;

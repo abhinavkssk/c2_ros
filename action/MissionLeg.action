@@ -1,0 +1,13 @@
+#goal
+MissionLeg m_leg
+
+---
+
+#result
+bool isSucceeded
+
+---
+
+#feedback
+#percentage (0-100%)
+uint8 progress 

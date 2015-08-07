@@ -1,0 +1,13 @@
+#goal
+geometry_msgs/PoseStamped[] mission_pt
+
+---
+
+#result
+bool isSucceeded
+
+---
+
+#feedback
+#percentage (0-100%)
+uint8 progress 
