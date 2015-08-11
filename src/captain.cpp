@@ -11,6 +11,7 @@
 #include "c2_ros/C2_CMD.h"
 #include "c2_ros/c2_state.h"
 #include "c2_ros/MissionLeg.h"
+#include <c2_ros/c2_agent.h>
 
 #include <actionlib/client/simple_action_client.h>
 #include <c2_ros/MissionLegAction.h>
@@ -39,6 +40,7 @@ private:
 	C2_STATE myState;
 	c2_ros::C2_CMD receivedCmd;
 	int m_leg_cnt;
+	bool isCurMLCompleted;
 
 	bool loadMissionFile(){
 
@@ -136,6 +138,7 @@ private:
 				}else{
 					//reset m_leg_cnt
 					m_leg_cnt = 0;
+					isCurMLCompleted = true;
 				}
 			}
 
@@ -153,19 +156,32 @@ private:
 	}
 
 	void run(){
-		if(m_leg_cnt < curMission.getMissionLegCount()){
-			curMissionLeg = curMission.get(m_leg_cnt);
-			m_leg_cnt++;
+		if(isCurMLCompleted){
+			if(m_leg_cnt < curMission.getMissionLegCount()){
+				curMissionLeg = curMission.get(m_leg_cnt);
+				if(curMissionLeg != nullptr)
+				{
+					m_leg_cnt++;
 
-			//debug: print out all the mission legs
-			ROS_INFO("bhv:[%d],lat:[%f],lon:[%f],heading:[%f],mpoint_rad:[%f]",curMissionLeg->m_bhv.bhv,curMissionLeg->lat,curMissionLeg->lon,curMissionLeg->heading,curMissionLeg->mission_pt_radius );
 
-		}else if(m_leg_cnt == curMission.getMissionLegCount()){
-			ROS_INFO("Mission Completed");
-			setMyState(C2_STATE::STANDBY);
-		}else{
-			ROS_WARN("Error in mission leg count");
-			setMyState(C2_STATE::ERROR);
+					//debug: print out all the mission legs
+					ROS_INFO("bhv:[%d],lat:[%f],lon:[%f],heading:[%f],mpoint_rad:[%f]",curMissionLeg->m_bhv.bhv,curMissionLeg->lat,curMissionLeg->lon,curMissionLeg->heading,curMissionLeg->mission_pt_radius );
+					sendGoal(*curMissionLeg);
+					isCurMLCompleted = false;
+				}
+				else
+				{
+					ROS_WARN("current mission return null ! ");
+					setMyState(C2_STATE::ERROR);
+				}
+
+			}else if(m_leg_cnt == curMission.getMissionLegCount()){
+				ROS_INFO("Mission Completed");
+				setMyState(C2_STATE::STANDBY);
+			}else{
+				ROS_WARN("Error in mission leg count");
+				setMyState(C2_STATE::ERROR);
+			}
 		}
 	}
 public:
@@ -192,12 +208,22 @@ public:
 	void goal_result_callback(const actionlib::SimpleClientGoalState& state,
 			const c2_ros::MissionLegResultConstPtr& result)
 	{
-
+		if(state == actionlib::SimpleClientGoalState::ABORTED)
+		{
+			ROS_INFO("Mission leg failure reported by planner, abort the mission...");
+			setMyState(C2_STATE::ABORT);
+		}
+		else if(state == actionlib::SimpleClientGoalState::SUCCEEDED)
+		{
+			ROS_INFO("Mission leg Succeeded reported by planner, proceed to the next mission leg...");
+			isCurMLCompleted = true;
+		}else if(state == actionlib::SimpleClientGoalState::PREEMPTED)
+			ROS_INFO("Mission leg preempted reported by planner");
 	}
 
 	void goal_active_callback()
 	{
-
+		ROS_INFO("MissionLeg number [%d] activated",m_leg_cnt);
 	}
 
 	void goal_feedback_callback(const c2_ros::MissionLegFeedbackConstPtr& feedback)
@@ -206,29 +232,33 @@ public:
 	}
 
 	bool contactServers(){
-		if(!c_waypoint.waitForServer(ros::Duration(5,0))){
+		if(!c_waypoint.waitForServer(ros::Duration(10,0))){
 			ROS_WARN("Timeout contacting c_waypoint server");
 			return false;
-		}
-		if(!c_abort.waitForServer(ros::Duration(5,0))){
+		}else
+			ROS_INFO("c_waypoint server contacted, continue ...");
+		if(!c_abort.waitForServer(ros::Duration(10,0))){
 			ROS_WARN("Timeout contacting c_abort server");
 			return false;
-		}
-		if(!c_lawnmow.waitForServer(ros::Duration(5,0))){
+		}else
+			ROS_INFO("c_abort server contacted, continue ...");
+		if(!c_lawnmow.waitForServer(ros::Duration(10,0))){
 			ROS_WARN("Timeout contacting c_lawnmow server");
 			return false;
-		}
-		if(!c_adaptivesampling.waitForServer(ros::Duration(5,0))){
+		}else
+			ROS_INFO("c_lawnmow server contacted, continue ...");
+		if(!c_adaptivesampling.waitForServer(ros::Duration(10,0))){
 			ROS_WARN("Timeout contacting c_adaptivesampling server");
 			return false;
-		}
+		}else
+			ROS_INFO("c_adaptivesampling server contacted, continue ...");
 
 		return true;
 	}
 
-	void sendGoal(c2_ros::MissionLeg ml){
+	void sendGoal(const c2_ros::MissionLeg& ml){
 		c2_ros::MissionLegGoal goal;
-		goal.m_leg = ml;
+		goal.m_leg = c2_ros::MissionLeg(ml);
 
 		if(ml.m_bhv.bhv == bhv.WAY_POINT){
 			c_waypoint.sendGoal(goal,
@@ -253,14 +283,15 @@ public:
 		nh_(nh),
 		m_leg_cnt(0),
 		curMissionLeg(nullptr),
+		isCurMLCompleted(true),
 		//declare the clients
-		c_waypoint("WayPoint",true),
-		c_abort("Abort",true),
-		c_lawnmow("LawnMow",true),
-		c_adaptivesampling("AdaptiveSampling",true) {
+		c_waypoint(C2::C2Agent(C2::C2Agent::MBHV_WAYPOINTER).toString(),true),
+		c_abort(C2::C2Agent(C2::C2Agent::MBHV_ABORTER).toString(),true),
+		c_lawnmow(C2::C2Agent(C2::C2Agent::MBHV_LAWNMOWER).toString(),true),
+		c_adaptivesampling(C2::C2Agent(C2::C2Agent::MBHV_ADAPTIVESAMPLER).toString(),true) {
 
 		//advertise service
-		srv_cmd = nh_.advertiseService("captain",&Captain::request_cmd_callback,this);
+		srv_cmd = nh_.advertiseService(C2::C2Agent(C2::C2Agent::CAPTAIN).toString(),&Captain::request_cmd_callback,this);
 
 		//make sure all the server exist, or else report error
 		if(!contactServers())
@@ -298,11 +329,11 @@ public:
 
 int main (int argc, char ** argv)
 {	
-	ros::init(argc, argv, "captain_node");
+	ros::init(argc, argv, C2::C2Agent(C2::C2Agent::CAPTAIN).toString());
 	ros::NodeHandle n;
 	ros::Rate loop_rate(1); //default to 1Hz
 
-	Captain c(ros::this_node::getName(),n);
+	Captain c(C2::C2Agent(C2::C2Agent::CAPTAIN).toString(),n);
 
 	//iterate
 	while (ros::ok())

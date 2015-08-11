@@ -1,32 +1,37 @@
 //base class for all the mission behaviors
 
+#include <ros/ros.h>
 #include <c2_ros/planner.h>
+#include <actionlib/server/simple_action_server.h>
+#include <actionlib/client/simple_action_client.h>
+#include <c2_ros/MissionLegAction.h>
+#include <c2_ros/MissionPointAction.h>
+#include <c2_ros/MissionLeg.h>
+#include <c2_ros/c2_agent.h>
 
 using C2::Planner;
 
-Planner::Planner(std::string name, int loopRate):
-						as_(nh_,name,false), // call Planner::spin() manually
+Planner::Planner(std::string name, int loopRate, ros::NodeHandle nh):
+						nh_(nh),
+						as_(nh,name,false), // call Planner::spin() manually
 						action_name_(name),
-						mpoint_client("Pilot",false), //call Planner::spin() manually
+						mpoint_client(C2::C2Agent(C2::C2Agent::PILOT).toString(),true), //call Planner::spin() manually
 						loop_rate(loopRate),
 						mpointCompleted(false),
 						toTick(false),
 						progressPercentage(0)
 {
-
 	//register the goal and feeback callbacks
 	as_.registerGoalCallback(boost::bind(&Planner::goal_callback, this));
 	as_.registerPreemptCallback(boost::bind(&Planner::preempt_callback, this));
+	as_.start();
 
 
 	//connect to pilot server
-	if(!mpoint_client.waitForServer(ros::Duration(5,0)))
-	{
+	if(!mpoint_client.waitForServer(ros::Duration(10,0)))
 		ROS_WARN("Pilot server can not be connected, in [%s]",action_name_.c_str());
-		c2_ros::MissionLegResult result;
-		result.isSucceeded = false;
-		as_.setAborted(result);
-	}
+	else
+		ROS_INFO("Pilot server established with [%s], continue ...",action_name_.c_str());
 }
 
 //this function must be called !!
@@ -42,30 +47,27 @@ void Planner::spin(){
 	ros::shutdown();
 }
 
-void Planner::sendMPoint(const geometry_msgs::PoseStamped::ConstPtr& pose)
+void Planner::sendMPoint(const geometry_msgs::PoseStamped& pose, bool isOverwrite)
 {
 	c2_ros::MissionPointGoal goal;
-	goal.mission_pt[0].header = pose->header;
-	goal.mission_pt[0].pose = pose->pose;
-
+	goal.mission_pt.push_back(pose);
+	goal.isOverwrite = isOverwrite;
 	mpoint_client.sendGoal(goal,
 			boost::bind(&Planner::mpoint_result_callback, this, _1,_2),
 			boost::bind(&Planner::mpoint_active_callback,this),
 			boost::bind(&Planner::mpoint_feedback_callback,this,_1));
-
 	//reset
 	mpointCompleted = false;
 	progressPercentage = 0;
 }
 
-void Planner::sendMPoint(std::vector<geometry_msgs::PoseStamped> poses)
+void Planner::sendMPoint(std::vector<geometry_msgs::PoseStamped> poses, bool isOverwrite)
 {
 	c2_ros::MissionPointGoal goal;
+	goal.isOverwrite = isOverwrite;
 	std::vector<geometry_msgs::PoseStamped>::iterator it;
-	int i=0;
 	for (it=poses.begin(); it != poses.end();it++){
-		goal.mission_pt[i] = *it;
-		i++;
+		goal.mission_pt.push_back(*it);
 	}
 
 	mpoint_client.sendGoal(goal,
@@ -108,6 +110,8 @@ int Planner::getMPProgress(){return progressPercentage;}
 
 void Planner::goal_callback()
 {
+	ROS_INFO("Mission Leg received in [%s]",action_name_.c_str());
+
 	//reset all the attributes
 	mpointCompleted = true;
 	toTick = true;
@@ -117,7 +121,7 @@ void Planner::goal_callback()
 	m_leg = as_.acceptNewGoal()->m_leg;
 
 	//allow the inheritant class to do some preparation
-	init();
+	onGoalReceived();
 }
 
 void Planner::preempt_callback()
@@ -131,6 +135,9 @@ void Planner::preempt_callback()
 	//reset the attributes
 	toTick = false;
 	m_leg = c2_ros::MissionLeg();
+
+	//reply the Captain
+	as_.setPreempted();
 
 }
 

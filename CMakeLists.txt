@@ -7,13 +7,13 @@ set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  actionlib 
+  actionlib_msgs
   asco_utils REQUIRED
   roscpp
   rospy
   std_msgs
   message_generation
-  actionlib
-  actionlib_msgs
   geometry_msgs
 )
 
@@ -91,9 +91,9 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
   ${asco_utils_INCLUDE_DIRS}
-#  LIBRARIES c2_ros
-#  CATKIN_DEPENDS roscpp rospy std_msgs
-  DEPENDS system_lib
+  # LIBRARIES c2_ros
+  CATKIN_DEPENDS actionlib actionlib_msgs message_generation roscpp rospy std_msgs
+   DEPENDS system_lib actionlib
 )
 
 ###########
@@ -109,21 +109,41 @@ include_directories(
 )
 
 ## Declare a cpp library
- add_library(c2_ros
-   src/mission.cpp
-   src/planner.cpp
+# add_library(c2_ros
+#   src/mission.cpp
+#   src/planner.cpp
+#)
+
+# get all *.cpp files recursively
+SET(B_FILES 
+    src/planner.cpp 
+    src/mission.cpp
+    src/pilot.cpp
 )
 
 ## Declare a cpp executable
-add_executable(captain_node src/captain.cpp)
-add_executable(mbhv_waypoint_node src/mbhv_waypoint.cpp)
+add_executable(captain_node src/captain.cpp ${B_FILES})
+add_executable(mbhv_waypoint_node src/mbhv_waypoint.cpp ${B_FILES})
+add_executable(mbhv_lawnmow_node src/mbhv_lawnmow.cpp ${B_FILES})
+add_executable(mbhv_adaptivesampling_node src/mbhv_adaptivesampling.cpp ${B_FILES})
+add_executable(mbhv_abort_node src/mbhv_abort.cpp ${B_FILES})
+add_executable(pilot_simulated_node src/pilot_simulated.cpp ${B_FILES})
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
- add_dependencies(c2_ros c2_ros_generate_messages_cpp)
+ add_dependencies(captain_node c2_ros_generate_messages_cpp)
+ add_dependencies(mbhv_waypoint_node c2_ros_generate_messages_cpp)
+ add_dependencies(mbhv_lawnmow_node c2_ros_generate_messages_cpp)
+ add_dependencies(mbhv_adaptivesampling_node c2_ros_generate_messages_cpp)
+ add_dependencies(pilot_simulated_node c2_ros_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(captain_node ${catkin_LIBRARIES} c2_ros)
+target_link_libraries(captain_node ${catkin_LIBRARIES})
+target_link_libraries(mbhv_waypoint_node ${catkin_LIBRARIES})
+target_link_libraries(mbhv_lawnmow_node ${catkin_LIBRARIES})
+target_link_libraries(mbhv_adaptivesampling_node ${catkin_LIBRARIES})
+target_link_libraries(mbhv_abort_node ${catkin_LIBRARIES})
+target_link_libraries(pilot_simulated_node ${catkin_LIBRARIES})
 
 #############
 ## Install ##

@@ -22,6 +22,15 @@ private:
 	int progressPercentage;
 	ros::Rate loop_rate;
 
+	actionlib::SimpleActionServer<c2_ros::MissionLegAction> as_;
+	void goal_callback();
+	void preempt_callback();
+
+	actionlib::SimpleActionClient<c2_ros::MissionPointAction> mpoint_client;
+	void mpoint_result_callback(const actionlib::SimpleClientGoalState& state,
+			const c2_ros::MissionPointResultConstPtr& result);
+	void mpoint_active_callback();
+	void mpoint_feedback_callback(const c2_ros::MissionPointFeedbackConstPtr& feedback);
 
 protected:
 	ros::NodeHandle nh_;
@@ -29,15 +38,12 @@ protected:
 	//NOTE: Do not block these methods for too long, use boost::bind and boost::thread for your
 	//own leisure if you are working with heavy stuffs !!
 	virtual void tick() = 0;
-	virtual void init() = 0;
+	virtual void onGoalReceived() = 0;
 	virtual void onStop() = 0;
 	virtual void onMPointFailure() = 0;
 
 	//server for Captain
-	actionlib::SimpleActionServer<c2_ros::MissionLegAction> as_;
 	std::string action_name_;
-	void goal_callback();
-	void preempt_callback();
 	c2_ros::MissionLeg getMissionLeg();
 	void setMLCompleted(bool isSucceeded);
 	bool isMPointCompleted();
@@ -45,16 +51,11 @@ protected:
 
 
 	//client for pilot
-	actionlib::SimpleActionClient<c2_ros::MissionPointAction> mpoint_client;
-	void mpoint_result_callback(const actionlib::SimpleClientGoalState& state,
-			const c2_ros::MissionPointResultConstPtr& result);
-	void mpoint_active_callback();
-	void mpoint_feedback_callback(const c2_ros::MissionPointFeedbackConstPtr& feedback);
-	void sendMPoint(const geometry_msgs::PoseStamped::ConstPtr& pose);
-	void sendMPoint(std::vector<geometry_msgs::PoseStamped> poses);
+	void sendMPoint(const geometry_msgs::PoseStamped& pose, bool isOverwrite = true);
+	void sendMPoint(std::vector<geometry_msgs::PoseStamped> poses, bool isOverwrite = true);
 
 public:
-	Planner(std::string name, int loopRate);
+	Planner(std::string name, int loopRate, ros::NodeHandle nh);
 	virtual ~Planner() = default;
 	void spin();
 

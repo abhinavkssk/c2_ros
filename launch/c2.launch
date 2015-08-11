@@ -1,0 +1,12 @@
+<launch>
+  <env name="ROSCONSOLE_CONFIG_FILE" 
+       value="$(find c2_ros)/config/custom_rosconsole.conf"/>
+  <node name="pilot_simulated_node" pkg="c2_ros" type="pilot_simulated_node" output="screen" clear_params="true" required="true" />  
+  <node name="mbhv_abort_node" pkg="c2_ros" type="mbhv_abort_node" output="screen" clear_params="true" required="true" />  
+  <node name="mbhv_adaptivesampling_node" pkg="c2_ros" type="mbhv_adaptivesampling_node" output="screen" clear_params="true" required="true" />  
+  <node name="mbhv_lawnmow_node" pkg="c2_ros" type="mbhv_lawnmow_node" output="screen" clear_params="true" required="true" />  
+  <node name="mbhv_waypoint_node" pkg="c2_ros" type="mbhv_waypoint_node" output="screen" clear_params="true" required="true" />  
+  <node name="captain_node" pkg="c2_ros" type="captain_node" output="screen" clear_params="true" required="true" />  
+
+  
+</launch>
