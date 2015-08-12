@@ -53,6 +53,13 @@ void Pilot::setMPCompleted(bool isSucceeded)
 
 }
 
+void Pilot::sendMPProgress(int percentage_completed)
+{
+	c2_ros::MissionPointFeedback feedback;
+	feedback.progress = percentage_completed;
+	as_.publishFeedback(feedback);
+}
+
 //this function must be called !!
 void Pilot::spin(){
 	//iterate

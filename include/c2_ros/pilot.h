@@ -26,6 +26,7 @@ protected:
 	virtual void onStop() = 0;
 	virtual void newMissionPointAvailable(std::vector<c2_ros::MissionPoint> mpoints, bool isOverwrite) = 0;
 	void setMPCompleted(bool isSucceeded);
+	void sendMPProgress(int percentage_completed);
 
 public:
 	Pilot(int loopRate, ros::NodeHandle nh);

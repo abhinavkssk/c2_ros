@@ -19,7 +19,7 @@ private:
 	c2_ros::MissionLeg m_leg;
 	bool mpointCompleted;
 	bool toTick;
-	int progressPercentage;
+	int mp_progressPercentage;
 	ros::Rate loop_rate;
 
 	actionlib::SimpleActionServer<c2_ros::MissionLegAction> as_;
@@ -46,6 +46,7 @@ protected:
 	std::string action_name_;
 	c2_ros::MissionLeg getMissionLeg();
 	void setMLCompleted(bool isSucceeded);
+	void sendMLProgress(int percentage_completed);
 	bool isMPointCompleted();
 	int getMPProgress();
 

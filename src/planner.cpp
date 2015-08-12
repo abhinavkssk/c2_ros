@@ -19,7 +19,7 @@ Planner::Planner(std::string name, int loopRate, ros::NodeHandle nh):
 						loop_rate(loopRate),
 						mpointCompleted(false),
 						toTick(false),
-						progressPercentage(0)
+						mp_progressPercentage(0)
 {
 	//register the goal and feeback callbacks
 	as_.registerGoalCallback(boost::bind(&Planner::goal_callback, this));
@@ -58,7 +58,7 @@ void Planner::sendMPoint(const c2_ros::MissionPoint& mpoint, bool isOverwrite)
 			boost::bind(&Planner::mpoint_feedback_callback,this,_1));
 	//reset
 	mpointCompleted = false;
-	progressPercentage = 0;
+	mp_progressPercentage = 0;
 }
 
 void Planner::sendMPoint(std::vector<c2_ros::MissionPoint> mpoints, bool isOverwrite)
@@ -77,7 +77,7 @@ void Planner::sendMPoint(std::vector<c2_ros::MissionPoint> mpoints, bool isOverw
 
 	//reset
 	mpointCompleted = false;
-	progressPercentage = 0;
+	mp_progressPercentage = 0;
 }
 
 void Planner::setMLCompleted(bool isSucceeded)
@@ -106,7 +106,7 @@ bool Planner::isMPointCompleted(){return mpointCompleted;}
 
 c2_ros::MissionLeg Planner::getMissionLeg(){return m_leg;}
 
-int Planner::getMPProgress(){return progressPercentage;}
+int Planner::getMPProgress(){return mp_progressPercentage;}
 
 void Planner::goal_callback()
 {
@@ -115,7 +115,7 @@ void Planner::goal_callback()
 	//reset all the attributes
 	mpointCompleted = true;
 	toTick = true;
-	progressPercentage = 0;
+	mp_progressPercentage = 0;
 
 	//accept the goal
 	m_leg = as_.acceptNewGoal()->m_leg;
@@ -152,7 +152,7 @@ void Planner::mpoint_result_callback(const actionlib::SimpleClientGoalState& sta
 	else if(state == actionlib::SimpleClientGoalState::SUCCEEDED)
 	{
 		ROS_INFO("Mission point Succeeded reported by pilot");
-		progressPercentage = 100;
+		mp_progressPercentage = 100;
 		mpointCompleted = true;
 	}else if(state == actionlib::SimpleClientGoalState::PREEMPTED)
 		ROS_INFO("Mission point preempted reported by pilot");
@@ -165,5 +165,12 @@ void Planner::mpoint_active_callback()
 
 void Planner::mpoint_feedback_callback(const c2_ros::MissionPointFeedbackConstPtr& feedback)
 {
-	progressPercentage = feedback->progress;
+	mp_progressPercentage = feedback->progress;
+}
+
+void Planner::sendMLProgress(int percentage_completed)
+{
+	c2_ros::MissionLegFeedback feedback;
+	feedback.progress = percentage_completed;
+	as_.publishFeedback(feedback);
 }
