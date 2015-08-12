@@ -45,6 +45,7 @@ public:
 				p.m_pt.y = ml.m_pt.y;
 				p.altdepth = ml.altdepth;
 				p.m_pt_radius = ml.m_pt_radius;
+				p.desired_speed = ml.desired_speed;
 
 				sendMPoint(p);
 
@@ -54,7 +55,7 @@ public:
 		}
 		else
 		{
-			ROS_INFO("Pilot working hard...");
+			//ROS_INFO("[%s]:Pilot working hard...",action_name_.c_str());
 		}
 	}
 

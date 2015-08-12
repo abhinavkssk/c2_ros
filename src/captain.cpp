@@ -22,6 +22,10 @@ c2_ros::C2_BHV bhv;
 using C2::C2_STATE;
 
 typedef actionlib::SimpleActionClient<c2_ros::MissionLegAction> ML_Client;
+#define DEFAULT_SPEED 1
+#define DEFAULT_MPT_RADIUS 5
+
+namespace C2 {
 
 class Captain
 {
@@ -42,6 +46,8 @@ private:
 	c2_ros::C2_CMD receivedCmd;
 	int m_leg_cnt;
 	bool isCurMLCompleted;
+	double default_speed;
+	double default_mpt_radius;
 
 	bool loadMissionFile(){
 
@@ -85,6 +91,7 @@ private:
 				}
 				else if (cnt == 6){ // mission_pt_radius
 					ml.m_pt_radius = std::stod(token);
+					if(ml.m_pt_radius <= 0.5) ml.m_pt_radius = default_mpt_radius;
 				}
 				else if (cnt == 8){ //heading
 					ml.m_pt.theta = std::stod(token);
@@ -106,6 +113,10 @@ private:
 			geodesy::fromMsg(geodesy::toMsg(lat,lon),utmp);
 			ml.m_pt.x = utmp.easting;
 			ml.m_pt.y = utmp.northing;
+
+
+			//TODO APM mission planner not allow desired speed, hack away !!!
+			ml.desired_speed = default_speed;
 
 			//add the mission leg into the mission
 			curMission.add(ml);
@@ -301,8 +312,11 @@ public:
 		c_lawnmow(C2::C2Agent(C2::C2Agent::MBHV_LAWNMOWER).toString(),true),
 		c_adaptivesampling(C2::C2Agent(C2::C2Agent::MBHV_ADAPTIVESAMPLER).toString(),true) {
 
+		//retrieve the default value for speed and radius
+		if (!nh_.getParam("/captain_node/captain_params/default_desired_speed",default_speed)) default_speed = DEFAULT_SPEED;
+		if (!nh_.getParam("/captain_node/captain_params/default_m_pt_radius",default_mpt_radius)) default_mpt_radius = DEFAULT_MPT_RADIUS;
 		//advertise service
-		srv_cmd = nh_.advertiseService(C2::C2Agent(C2::C2Agent::CAPTAIN).toString(),&Captain::request_cmd_callback,this);
+		srv_cmd = nh_.advertiseService(C2::C2Agent(C2::C2Agent::CAPTAIN).toString(),&C2::Captain::request_cmd_callback,this);
 
 		//make sure all the server exist, or else report error
 		if(!contactServers())
@@ -338,13 +352,15 @@ public:
 
 };
 
+}
+
 int main (int argc, char ** argv)
 {	
 	ros::init(argc, argv, C2::C2Agent(C2::C2Agent::CAPTAIN).toString());
 	ros::NodeHandle n;
 	ros::Rate loop_rate(1); //default to 1Hz
 
-	Captain c(C2::C2Agent(C2::C2Agent::CAPTAIN).toString(),n);
+	C2::Captain c(C2::C2Agent(C2::C2Agent::CAPTAIN).toString(),n);
 
 	//iterate
 	while (ros::ok())

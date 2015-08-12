@@ -17,6 +17,8 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   geographic_msgs
   geodesy
+  tf
+  tf2_ros
 )
 
 ## System dependencies are found with CMake's conventions
@@ -59,6 +61,7 @@ find_package(catkin REQUIRED COMPONENTS
    MissionLeg.msg
    MissionPoint.msg
    KeyValue.msg
+   ActuatorControl.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -133,6 +136,7 @@ add_executable(mbhv_lawnmow_node src/mbhv_lawnmow.cpp ${B_FILES})
 add_executable(mbhv_adaptivesampling_node src/mbhv_adaptivesampling.cpp ${B_FILES})
 add_executable(mbhv_abort_node src/mbhv_abort.cpp ${B_FILES})
 add_executable(pilot_simulated_node src/pilot_simulated.cpp ${B_FILES})
+add_executable(vehicle_simulator_node src/vehicle_simulator.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -141,6 +145,7 @@ add_executable(pilot_simulated_node src/pilot_simulated.cpp ${B_FILES})
  add_dependencies(mbhv_lawnmow_node c2_ros_generate_messages_cpp)
  add_dependencies(mbhv_adaptivesampling_node c2_ros_generate_messages_cpp)
  add_dependencies(pilot_simulated_node c2_ros_generate_messages_cpp)
+ add_dependencies(vehicle_simulator_node c2_ros_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(captain_node ${catkin_LIBRARIES})
@@ -149,6 +154,8 @@ target_link_libraries(mbhv_lawnmow_node ${catkin_LIBRARIES})
 target_link_libraries(mbhv_adaptivesampling_node ${catkin_LIBRARIES})
 target_link_libraries(mbhv_abort_node ${catkin_LIBRARIES})
 target_link_libraries(pilot_simulated_node ${catkin_LIBRARIES})
+target_link_libraries(vehicle_simulator_node ${catkin_LIBRARIES})
+
 
 #############
 ## Install ##
