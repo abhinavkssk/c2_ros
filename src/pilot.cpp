@@ -9,7 +9,7 @@ using C2::Pilot;
 
 Pilot::Pilot(int loopRate, ros::NodeHandle nh):
 												nh_(nh),
-												action_name_(C2::C2Agent(C2::C2Agent::PILOT).toString()),
+												agentName(C2::C2Agent(C2::C2Agent::PILOT).toString()),
 												loop_rate(loopRate),
 												as_(nh,C2::C2Agent(C2::C2Agent::PILOT).toString(),false)
 {
@@ -27,7 +27,7 @@ void Pilot::goal_callback()
 
 void Pilot::preempt_callback()
 {
-	ROS_INFO("Preempt requested in [%s]",action_name_.c_str());
+	ROS_INFO("Preempt requested in [%s]",agentName.c_str());
 	onStop();
 
 	//reply planner's request
@@ -39,14 +39,14 @@ void Pilot::setMPCompleted(bool isSucceeded)
 	c2_ros::MissionPointResult result;
 	if(isSucceeded)
 	{
-		ROS_INFO("[%s]'s mission points succeeded",action_name_.c_str());
+		ROS_INFO("[%s]'s mission points succeeded",agentName.c_str());
 		result.isSucceeded = true;
 		as_.setSucceeded(result);
 
 	}
 	else
 	{
-		ROS_INFO("[%s]'s mission points failed",action_name_.c_str());
+		ROS_INFO("[%s]'s mission points failed",agentName.c_str());
 		result.isSucceeded = false;
 		as_.setAborted(result);
 	}

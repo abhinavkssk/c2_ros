@@ -51,8 +51,6 @@ public:
 		odom_est_sub = nh_.subscribe("/odometry/filtered",1, &C2::Pilot_Simulated::odom_x_est,this);
 
 		ac_pub = nh_.advertise<c2_ros::ActuatorControl>("/c2_ros/actuator_control",1);
-
-		ROS_INFO("Done, spin now ! ");
 	}
 
 	~Pilot_Simulated()
@@ -82,7 +80,6 @@ public:
 
 					//check vehicle's side angles
 					isCurMPReached = checkDistAngle();
-					ROS_INFO("Navigating ");
 					if(isCurMPReached) return;
 				}
 				else
@@ -138,7 +135,7 @@ public:
 			ac.desired_speed = speedSP;
 			ac.desired_bearing = bearingSP;
 			ac_pub.publish(ac);
-			ROS_INFO("[%s]: desired_bearing = %f, curBearing = %f, dist=%f",action_name_.c_str(),bearingSP,curBearing,dist);
+			ROS_INFO("[%s]: desired_bearing = %f, curBearing = %f, dist=%f",agentName.c_str(),bearingSP,curBearing,dist);
 
 			return false;
 		}
@@ -174,7 +171,10 @@ public:
 
 	double yaw2bearing(double yaw)
 	{
-		return 90 - (yaw/M_PI)*180;
+		double b = 90 - (yaw/M_PI)*180;
+		if(b < 0) b += 360;
+		if(b > 360) b -= 360;
+		return b;
 	}
 
 	//angle between two points in deg
@@ -209,7 +209,7 @@ public:
 
 	void newMissionPointAvailable(std::vector<c2_ros::MissionPoint> poses, bool isOverwrite)
 	{
-		ROS_INFO("Mission point received by [%s]",action_name_.c_str());
+		ROS_INFO("Mission point received by [%s]",agentName.c_str());
 		if(isCompleted)
 		{
 			poseToRun = std::vector<c2_ros::MissionPoint>(poses);

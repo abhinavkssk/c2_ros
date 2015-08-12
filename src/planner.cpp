@@ -14,7 +14,7 @@ using C2::Planner;
 Planner::Planner(std::string name, int loopRate, ros::NodeHandle nh):
 						nh_(nh),
 						as_(nh,name,false), // call Planner::spin() manually
-						action_name_(name),
+						agentName(name),
 						mpoint_client(C2::C2Agent(C2::C2Agent::PILOT).toString(),true), //call Planner::spin() manually
 						loop_rate(loopRate),
 						mpointCompleted(false),
@@ -29,9 +29,9 @@ Planner::Planner(std::string name, int loopRate, ros::NodeHandle nh):
 
 	//connect to pilot server
 	if(!mpoint_client.waitForServer(ros::Duration(10,0)))
-		ROS_WARN("Pilot server can not be connected, in [%s]",action_name_.c_str());
+		ROS_WARN("Pilot server can not be connected, in [%s]",agentName.c_str());
 	else
-		ROS_INFO("Pilot server established with [%s], continue ...",action_name_.c_str());
+		ROS_INFO("Pilot server established with [%s], continue ...",agentName.c_str());
 }
 
 //this function must be called !!
@@ -85,14 +85,14 @@ void Planner::setMLCompleted(bool isSucceeded)
 	c2_ros::MissionLegResult result;
 	if(isSucceeded)
 	{
-		ROS_INFO("[%s]'s goal succeeded",action_name_.c_str());
+		ROS_INFO("[%s]'s goal succeeded",agentName.c_str());
 		result.isSucceeded = true;
 		as_.setSucceeded(result);
 
 	}
 	else
 	{
-		ROS_INFO("[%s]'s goal failed",action_name_.c_str());
+		ROS_INFO("[%s]'s goal failed",agentName.c_str());
 		result.isSucceeded = false;
 		as_.setAborted(result);
 	}
@@ -110,7 +110,7 @@ int Planner::getMPProgress(){return mp_progressPercentage;}
 
 void Planner::goal_callback()
 {
-	ROS_INFO("Mission Leg received in [%s]",action_name_.c_str());
+	ROS_INFO("Mission Leg received in [%s]",agentName.c_str());
 
 	//reset all the attributes
 	mpointCompleted = true;

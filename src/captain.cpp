@@ -40,6 +40,7 @@ protected:
 	ML_Client c_waypoint, c_abort, c_lawnmow, c_adaptivesampling;
 
 private:
+	std::string agentName;
 	C2::Mission curMission;
 	const c2_ros::MissionLeg* curMissionLeg;
 	C2_STATE myState;
@@ -133,7 +134,7 @@ private:
 
 	bool setMyState(C2_STATE state){
 		if(onStateEntry(myState,state)){
-			ROS_INFO("state transition [%s]->[%s]",C2::C2_StateName[(int)myState],C2::C2_StateName[(int)state]);
+			ROS_INFO("[%s]: [%s]->[%s]",agentName.c_str(),C2::C2_StateName[(int)myState],C2::C2_StateName[(int)state]);
 			myState = state;
 			//broadcast the captain's state
 
@@ -301,6 +302,7 @@ public:
 	}
 
 	Captain(std::string name, ros::NodeHandle nh):
+		agentName(name),
 		myState(C2_STATE::INIT),
 		nh_(nh),
 		m_leg_cnt(0),
@@ -315,6 +317,7 @@ public:
 		//retrieve the default value for speed and radius
 		if (!nh_.getParam("/captain_node/captain_params/default_desired_speed",default_speed)) default_speed = DEFAULT_SPEED;
 		if (!nh_.getParam("/captain_node/captain_params/default_m_pt_radius",default_mpt_radius)) default_mpt_radius = DEFAULT_MPT_RADIUS;
+
 		//advertise service
 		srv_cmd = nh_.advertiseService(C2::C2Agent(C2::C2Agent::CAPTAIN).toString(),&C2::Captain::request_cmd_callback,this);
 

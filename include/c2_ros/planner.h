@@ -34,6 +34,7 @@ private:
 
 protected:
 	ros::NodeHandle nh_;
+	std::string agentName;
 
 	//NOTE: Do not block these methods for too long, use boost::bind and boost::thread for your
 	//own leisure if you are working with heavy stuffs !!
@@ -43,13 +44,11 @@ protected:
 	virtual void onMPointFailure() = 0;
 
 	//server for Captain
-	std::string action_name_;
 	c2_ros::MissionLeg getMissionLeg();
 	void setMLCompleted(bool isSucceeded);
 	void sendMLProgress(int percentage_completed);
 	bool isMPointCompleted();
 	int getMPProgress();
-
 
 	//client for pilot
 	void sendMPoint(const c2_ros::MissionPoint& mpoint, bool isOverwrite = true);

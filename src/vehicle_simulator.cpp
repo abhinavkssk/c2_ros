@@ -168,6 +168,7 @@ public:
 		if (time <= this->time) return;
 		double speed = thrust2speed(thrust);
 		double dt = (time-this->time);
+		double t_lapsed = dt;
 		//ROS_INFO("lapse=%f",dt);
 		this->time = time;
 		//get current
@@ -225,8 +226,8 @@ public:
 
 		//set the velocity
 		odom.child_frame_id = "base_link";
-		odom.twist.twist.linear.x = (xPos-xOld)/dt;
-		odom.twist.twist.linear.y = (yPos-yOld)/dt;;
+		odom.twist.twist.linear.x = (xPos-xOld)/t_lapsed;
+		odom.twist.twist.linear.y = (yPos-yOld)/t_lapsed;
 		odom.twist.twist.angular.z = dh;
 
 		//publish the message
@@ -252,7 +253,7 @@ int main (int argc, char ** argv)
 {
 	ros::init(argc, argv, "VEHICLE_SIMULATOR");
 	ros::NodeHandle n;
-	ros::Rate loop_rate(10); //default to 1Hz
+	ros::Rate loop_rate(10); //default to 10Hz
 
 	C2::VSim c(n);
 

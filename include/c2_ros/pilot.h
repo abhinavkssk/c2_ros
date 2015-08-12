@@ -21,7 +21,7 @@ private:
 
 protected:
 	ros::NodeHandle nh_;
-	std::string action_name_;
+	std::string agentName;
 	virtual void tick() = 0;
 	virtual void onStop() = 0;
 	virtual void newMissionPointAvailable(std::vector<c2_ros::MissionPoint> mpoints, bool isOverwrite) = 0;
