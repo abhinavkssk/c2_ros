@@ -47,10 +47,10 @@ void Planner::spin(){
 	ros::shutdown();
 }
 
-void Planner::sendMPoint(const geometry_msgs::PoseStamped& pose, bool isOverwrite)
+void Planner::sendMPoint(const c2_ros::MissionPoint& mpoint, bool isOverwrite)
 {
 	c2_ros::MissionPointGoal goal;
-	goal.mission_pt.push_back(pose);
+	goal.mission_pt.push_back(mpoint);
 	goal.isOverwrite = isOverwrite;
 	mpoint_client.sendGoal(goal,
 			boost::bind(&Planner::mpoint_result_callback, this, _1,_2),
@@ -61,12 +61,12 @@ void Planner::sendMPoint(const geometry_msgs::PoseStamped& pose, bool isOverwrit
 	progressPercentage = 0;
 }
 
-void Planner::sendMPoint(std::vector<geometry_msgs::PoseStamped> poses, bool isOverwrite)
+void Planner::sendMPoint(std::vector<c2_ros::MissionPoint> mpoints, bool isOverwrite)
 {
 	c2_ros::MissionPointGoal goal;
 	goal.isOverwrite = isOverwrite;
-	std::vector<geometry_msgs::PoseStamped>::iterator it;
-	for (it=poses.begin(); it != poses.end();it++){
+	std::vector<c2_ros::MissionPoint>::iterator it;
+	for (it=mpoints.begin(); it != mpoints.end();it++){
 		goal.mission_pt.push_back(*it);
 	}
 

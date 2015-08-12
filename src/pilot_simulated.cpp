@@ -8,8 +8,8 @@ namespace C2{
 class Pilot_Simulated: public Pilot
 {
 private:
-	std::vector<geometry_msgs::PoseStamped> poseToRun;
-	geometry_msgs::PoseStamped curMP;
+	std::vector<c2_ros::MissionPoint> poseToRun;
+	c2_ros::MissionPoint curMP;
 	int poseCnt;
 	bool isCompleted;
 	bool isReinitialized;
@@ -47,7 +47,7 @@ public:
 				if(poseCnt < poseToRun.size())
 				{
 					curMP = poseToRun.at(poseCnt);
-					ROS_INFO("Navigating to x=%f, y=%f",curMP.pose.position.x,curMP.pose.position.y);
+					ROS_INFO("Navigating to x=%f, y=%f",curMP.m_pt.x,curMP.m_pt.y);
 					poseCnt++;
 					isCurMPReached = false;
 				}
@@ -63,11 +63,11 @@ public:
 		}
 	}
 
-	void navigateTo(geometry_msgs::PoseStamped mp)
+	void navigateTo(c2_ros::MissionPoint mp)
 	{
 		//simulate succeed
-		//ROS_INFO("reached x=%f, y=%f",mp.pose.position.x,mp.pose.position.y);
-		//isCurMPReached = true;
+		ROS_INFO("reached x=%f, y=%f",mp.m_pt.x,mp.m_pt.y);
+		isCurMPReached = true;
 
 
 		//simulate failure
@@ -83,12 +83,12 @@ public:
 		isCurMPReached = true;
 	}
 
-	void newMissionPointAvailable(std::vector<geometry_msgs::PoseStamped> poses, bool isOverwrite)
+	void newMissionPointAvailable(std::vector<c2_ros::MissionPoint> poses, bool isOverwrite)
 	{
 		ROS_INFO("Mission point received by [%s]",action_name_.c_str());
 		if(isCompleted)
 		{
-			poseToRun = std::vector<geometry_msgs::PoseStamped>(poses);
+			poseToRun = std::vector<c2_ros::MissionPoint>(poses);
 			isCompleted = false;
 			isCurMPReached = true;
 			poseCnt = 0;
@@ -97,13 +97,13 @@ public:
 		{
 			if(isOverwrite)
 			{
-				poseToRun = std::vector<geometry_msgs::PoseStamped>(poses);
+				poseToRun = std::vector<c2_ros::MissionPoint>(poses);
 				isReinitialized = true;
 				poseCnt = 0;
 			}
 			else
 			{
-				std::vector<geometry_msgs::PoseStamped>::iterator it;
+				std::vector<c2_ros::MissionPoint>::iterator it;
 				for(it = poses.begin(); it != poses.end(); it++){
 					poseToRun.push_back(*it);
 				}

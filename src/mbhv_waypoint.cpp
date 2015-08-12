@@ -40,9 +40,11 @@ public:
 			else
 			{
 				ROS_INFO("sending MPoints");
-				geometry_msgs::PoseStamped p;
-				p.pose.position.x = ml.lat;
-				p.pose.position.y = ml.lon;
+				c2_ros::MissionPoint p;
+				p.m_pt.x = ml.m_pt.x;
+				p.m_pt.y = ml.m_pt.y;
+				p.altdepth = ml.altdepth;
+				p.m_pt_radius = ml.m_pt_radius;
 
 				sendMPoint(p);
 

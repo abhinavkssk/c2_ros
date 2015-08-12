@@ -1,5 +1,5 @@
 #goal
-geometry_msgs/PoseStamped[] mission_pt
+MissionPoint[] mission_pt
 bool isOverwrite 							#overwrite the previous goal if true, otherwise, appended to the last goal
 ---
 

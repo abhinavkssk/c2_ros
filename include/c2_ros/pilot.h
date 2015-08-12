@@ -24,7 +24,7 @@ protected:
 	std::string action_name_;
 	virtual void tick() = 0;
 	virtual void onStop() = 0;
-	virtual void newMissionPointAvailable(std::vector<geometry_msgs::PoseStamped> poses, bool isOverwrite) = 0;
+	virtual void newMissionPointAvailable(std::vector<c2_ros::MissionPoint> mpoints, bool isOverwrite) = 0;
 	void setMPCompleted(bool isSucceeded);
 
 public:

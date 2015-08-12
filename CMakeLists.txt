@@ -15,6 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   message_generation
   geometry_msgs
+  geographic_msgs
+  geodesy
 )
 
 ## System dependencies are found with CMake's conventions
@@ -55,6 +57,8 @@ find_package(catkin REQUIRED COMPONENTS
    FILES
    C2_BHV.msg
    MissionLeg.msg
+   MissionPoint.msg
+   KeyValue.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -77,6 +81,7 @@ find_package(catkin REQUIRED COMPONENTS
    actionlib_msgs
    std_msgs
    geometry_msgs 
+   geographic_msgs
  )
 
 ###################################

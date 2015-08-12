@@ -15,6 +15,7 @@
 
 #include <actionlib/client/simple_action_client.h>
 #include <c2_ros/MissionLegAction.h>
+#include <geodesy/utm.h>
 
 c2_ros::C2_BHV bhv;
 
@@ -62,6 +63,7 @@ private:
 		//file exist, proceeed
 		//the processing is according to APM 2.0 GUI (QGC WPL 110)
 		std::string line;
+		double lat,lon;
 		while (std::getline(infile, line))
 		{
 			std::istringstream iss(line);
@@ -82,19 +84,28 @@ private:
 					//TODO fill in the rest !
 				}
 				else if (cnt == 6){ // mission_pt_radius
-					ml.mission_pt_radius = std::stod(token);
+					ml.m_pt_radius = std::stod(token);
 				}
 				else if (cnt == 8){ //heading
-					ml.heading = std::stod(token);
+					ml.m_pt.theta = std::stod(token);
 				}
 				else if (cnt == 9){ // lat
-					ml.lat = std::stod(token);
+					lat = std::stod(token);
 				}
 				else if (cnt == 10){ //lon
-					ml.lon = std::stod(token);
+					lon = std::stod(token);
+				}
+				else if (cnt == 11){ //altitude or depth
+					ml.altdepth = std::stod(token);
 				}
 				cnt++;
 			}
+
+			//convert lat-lon to UTM
+			geodesy::UTMPoint utmp;
+			geodesy::fromMsg(geodesy::toMsg(lat,lon),utmp);
+			ml.m_pt.x = utmp.easting;
+			ml.m_pt.y = utmp.northing;
 
 			//add the mission leg into the mission
 			curMission.add(ml);
@@ -165,7 +176,7 @@ private:
 
 
 					//debug: print out all the mission legs
-					ROS_INFO("bhv:[%d],lat:[%f],lon:[%f],heading:[%f],mpoint_rad:[%f]",curMissionLeg->m_bhv.bhv,curMissionLeg->lat,curMissionLeg->lon,curMissionLeg->heading,curMissionLeg->mission_pt_radius );
+					ROS_INFO("bhv:[%d],x:[%f],y:[%f],heading:[%f],mpoint_rad:[%f]",curMissionLeg->m_bhv.bhv,curMissionLeg->m_pt.x,curMissionLeg->m_pt.y,curMissionLeg->m_pt.theta,curMissionLeg->m_pt_radius );
 					sendGoal(*curMissionLeg);
 					isCurMLCompleted = false;
 				}

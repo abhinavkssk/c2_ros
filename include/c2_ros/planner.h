@@ -51,8 +51,8 @@ protected:
 
 
 	//client for pilot
-	void sendMPoint(const geometry_msgs::PoseStamped& pose, bool isOverwrite = true);
-	void sendMPoint(std::vector<geometry_msgs::PoseStamped> poses, bool isOverwrite = true);
+	void sendMPoint(const c2_ros::MissionPoint& mpoint, bool isOverwrite = true);
+	void sendMPoint(std::vector<c2_ros::MissionPoint> mpoints, bool isOverwrite = true);
 
 public:
 	Planner(std::string name, int loopRate, ros::NodeHandle nh);
