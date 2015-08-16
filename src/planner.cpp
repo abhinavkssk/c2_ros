@@ -8,18 +8,19 @@
 #include <c2_ros/MissionPointAction.h>
 #include <c2_ros/MissionLeg.h>
 #include <c2_ros/c2_agent.h>
+#include <c2_ros/BHVProposer.h>
 
 using C2::Planner;
 
 Planner::Planner(std::string name, int loopRate, ros::NodeHandle nh):
-						nh_(nh),
-						as_(nh,name,false), // call Planner::spin() manually
-						agentName(name),
-						mpoint_client(C2::C2Agent(C2::C2Agent::PILOT).toString(),true), //call Planner::spin() manually
-						loop_rate(loopRate),
-						mpointCompleted(false),
-						toTick(false),
-						mp_progressPercentage(0)
+								nh_(nh),
+								as_(nh,name,false), // call Planner::spin() manually
+								agentName(name),
+								mpoint_client(C2::C2Agent(C2::C2Agent::PILOT).toString(),true), //call Planner::spin() manually
+								loop_rate(loopRate),
+								mpointCompleted(false),
+								toTick(false),
+								mp_progressPercentage(0)
 {
 	//register the goal and feeback callbacks
 	as_.registerGoalCallback(boost::bind(&Planner::goal_callback, this));
@@ -32,6 +33,24 @@ Planner::Planner(std::string name, int loopRate, ros::NodeHandle nh):
 		ROS_WARN("Pilot server can not be connected, in [%s]",agentName.c_str());
 	else
 		ROS_INFO("Pilot server established with [%s], continue ...",agentName.c_str());
+
+	//sub and pub bhv
+	bhv_request_sub = nh_.subscribe("/captain/bhv_request",100, &Planner::bhv_request_callback,this);
+	bhv_propose_pub = nh_.advertise<c2_ros::BHVProposer>("/captain/bhv_propose",100);
+}
+
+void Planner::bhv_request_callback(const c2_ros::C2_BHV::ConstPtr& bhv_request)
+{
+	std::vector<c2_ros::C2_BHV::_bhv_type>::iterator it;
+
+	it = find (capable_bhv.begin(), capable_bhv.end(), bhv_request->bhv);
+	if (it != capable_bhv.end())
+	{
+		//publish to let Captain know
+		c2_ros::BHVProposer p;
+		p.name = agentName;
+		bhv_propose_pub.publish(p);
+	}
 }
 
 //this function must be called !!
@@ -173,4 +192,9 @@ void Planner::sendMLProgress(int percentage_completed)
 	c2_ros::MissionLegFeedback feedback;
 	feedback.progress = percentage_completed;
 	as_.publishFeedback(feedback);
+}
+
+void Planner::registerCapableBHV(c2_ros::C2_BHV::_bhv_type bhv)
+{
+	capable_bhv.push_back(bhv);
 }

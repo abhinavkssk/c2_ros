@@ -38,7 +38,9 @@ private:
 public:
 	VSim(ros::NodeHandle n):bearing(0),thrust(0),turn(0),depthSP(0),depth(0),time(ros::Time::now().toSec()),nh_(n)
 {
-		odo_pub = nh_.advertise<nav_msgs::Odometry>("/odometry/filtered",1);
+		std::string odm_name;
+		if (!nh_.getParam("/c2_params/odometry_topic_name",odm_name)) odm_name = "/odometry/filtered";
+		odo_pub = nh_.advertise<nav_msgs::Odometry>(odm_name,1);
 
 		ac_sun = nh_.subscribe("/c2_ros/actuator_control",1,&C2::VSim::actuatorControl,this);
 
@@ -62,11 +64,11 @@ public:
 
 	void retrieveParams()
 	{
-		if (!nh_.getParam("/vehicle_simulator_node/simulator/startX",xPos)) xPos = 0;
-		if (!nh_.getParam("/vehicle_simulator_node/simulator/startY",yPos)) yPos = 0;
+		if (!nh_.getParam("/c2_params/startX",xPos)) xPos = 0;
+		if (!nh_.getParam("/c2_params/startY",yPos)) yPos = 0;
 		double lat,lon;
-		if (nh_.getParam("/vehicle_simulator_node/simulator/startX_lat",lat) &&
-				nh_.getParam("/vehicle_simulator_node/simulator/startY_lon",lon))
+		if (nh_.getParam("/c2_params/startX_lat",lat) &&
+				nh_.getParam("/c2_params/startY_lon",lon))
 		{
 			geodesy::UTMPoint utmp;
 			geodesy::fromMsg(geodesy::toMsg(lat,lon),utmp);
@@ -74,10 +76,10 @@ public:
 			yPos = utmp.northing;
 		}
 
-		if (!nh_.getParam("/vehicle_simulator_node/simulator/turnRate",turnRate)) turnRate = 10;
-		if (!nh_.getParam("/vehicle_simulator_node/simulator/thrustScale",thrustScale)) thrustScale = 1;
-		if (!nh_.getParam("/vehicle_simulator_node/simulator/currentSpeed",currentSpeed)) currentSpeed = 0;
-		if (!nh_.getParam("/vehicle_simulator_node/simulator/currentYaw",currentYaw)) currentYaw = 0;
+		if (!nh_.getParam("/c2_params/turnRate",turnRate)) turnRate = 10;
+		if (!nh_.getParam("/c2_params/thrustScale",thrustScale)) thrustScale = 1;
+		if (!nh_.getParam("/c2_params/currentSpeed",currentSpeed)) currentSpeed = 0;
+		if (!nh_.getParam("/c2_params/currentYaw",currentYaw)) currentYaw = 0;
 
 	}
 

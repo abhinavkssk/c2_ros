@@ -9,7 +9,7 @@ class C2Agent{
 
 public:
 	enum AgentEnum {
-		CAPTAIN,
+		CAPTAIN = 0,
 		PILOT,
 		MBHV_ABORTER,
 		MBHV_ADAPTIVESAMPLER,

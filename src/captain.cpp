@@ -1,17 +1,22 @@
 #include <ros/ros.h>
+#include <nav_msgs/Odometry.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <pwd.h>
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 
 #include "c2_ros/mission.h"
 #include "c2_ros/C2_BHV.h"
+#include "c2_ros/BHVProposer.h"
 #include "c2_ros/C2_CMD.h"
 #include "c2_ros/c2_state.h"
 #include "c2_ros/MissionLeg.h"
 #include <c2_ros/c2_agent.h>
+#include <c2_ros/planner_map.h>
+#include <asco_utils/utils.h>
 
 #include <actionlib/client/simple_action_client.h>
 #include <c2_ros/MissionLegAction.h>
@@ -21,7 +26,6 @@ c2_ros::C2_BHV bhv;
 
 using C2::C2_STATE;
 
-typedef actionlib::SimpleActionClient<c2_ros::MissionLegAction> ML_Client;
 #define DEFAULT_SPEED 1
 #define DEFAULT_MPT_RADIUS 5
 
@@ -36,12 +40,19 @@ protected:
 	ros::NodeHandle nh_;
 
 	ros::ServiceServer srv_cmd;
+	ros::Subscriber odom_est_sub;
+	ros::Subscriber bhv_propose_sub;
+	ros::Publisher bhv_request_pub;
 
-	ML_Client c_waypoint, c_abort, c_lawnmow, c_adaptivesampling;
+	C2::Planner_Map *pm;
 
 private:
 	std::string agentName;
+	std::string activePlanner;
 	C2::Mission curMission;
+	geometry_msgs::Pose2D curPos;
+	geometry_msgs::Pose2D m_startPos;
+	geometry_msgs::Pose2D home_Pos;
 	const c2_ros::MissionLeg* curMissionLeg;
 	C2_STATE myState;
 	c2_ros::C2_CMD receivedCmd;
@@ -59,11 +70,15 @@ private:
 		struct passwd *pw = getpwuid(getuid());
 		std::string homedir (pw->pw_dir);
 
+		//get mission path from param server
+		std::string m_filename;
+		if (!nh_.getParam("/captain_node/captain_params/mission_file_location",m_filename)) m_filename = homedir + mPath;
+
+
 		//construct the path and check if the dir exist
-		std::string filePath = homedir + "/Missions/mission.txt";
-		std::ifstream infile(filePath.c_str());
+		std::ifstream infile(m_filename.c_str());
 		if (!infile.good()){
-			ROS_WARN("Mission file not exist:[%s]",filePath.c_str());
+			ROS_WARN("Mission file not exist:[%s]",m_filename.c_str());
 			return false;
 		}
 
@@ -128,7 +143,7 @@ private:
 			return false;
 		}
 
-		ROS_INFO("Mission file [%s] has %d legs",filePath.c_str(),curMission.getMissionLegCount());
+		ROS_INFO("Mission file [%s] has %d legs",m_filename.c_str(),curMission.getMissionLegCount());
 		return true;
 	}
 
@@ -162,6 +177,13 @@ private:
 					//reset m_leg_cnt
 					m_leg_cnt = 0;
 					isCurMLCompleted = true;
+
+					//record the mission start position
+					m_startPos = curPos;
+
+					// reset active planner's name
+					activePlanner.clear();
+
 				}
 			}
 
@@ -178,14 +200,26 @@ private:
 		return true;
 	}
 
+	void requestForProposal(c2_ros::C2_BHV bhv)
+	{
+		c2_ros::C2_BHV b;
+		b.bhv = bhv.bhv;
+		bhv_request_pub.publish(b);
+	}
+
 	void run(){
 		if(isCurMLCompleted){
 			if(m_leg_cnt < curMission.getMissionLegCount()){
 				curMissionLeg = curMission.get(m_leg_cnt);
 				if(curMissionLeg != nullptr)
 				{
-					m_leg_cnt++;
+					if(activePlanner.empty())
+					{
+						requestForProposal(curMissionLeg->m_bhv);
+						return;
+					}
 
+					m_leg_cnt++;
 
 					//debug: print out all the mission legs
 					ROS_INFO("bhv:[%d],x:[%f],y:[%f],heading:[%f],mpoint_rad:[%f]",curMissionLeg->m_bhv.bhv,curMissionLeg->m_pt.x,curMissionLeg->m_pt.y,curMissionLeg->m_pt.theta,curMissionLeg->m_pt_radius );
@@ -213,13 +247,21 @@ public:
 	{
 		receivedCmd.request.command = request.command;
 		bool result = false;
-		if(request.command == c2_ros::C2_CMD::Request::RUN_MISSION){
+		if(request.command == c2_ros::C2_CMD::Request::RUN_MISSION)
+		{
 			result = setMyState(C2_STATE::RUN);
 			response.result = result;
 			return result;
 		}else if (request.command == c2_ros::C2_CMD::Request::ABORT ||
 				request.command == c2_ros::C2_CMD::Request::ABORT_TO_HOME ||
-				request.command == c2_ros::C2_CMD::Request::ABORT_TO_START_POS){
+				request.command == c2_ros::C2_CMD::Request::ABORT_TO_START_POS)
+		{
+			//cancel the activeplanner's activities
+			if(!activePlanner.empty())
+				pm->getClient(activePlanner)->cancelAllGoals();
+
+			//reassign the activePlanner to aborter
+			activePlanner = C2::C2Agent(C2::C2Agent::MBHV_ABORTER).toString();
 			result = setMyState(C2_STATE::ABORT);
 			response.result = result;
 			return result;
@@ -240,6 +282,7 @@ public:
 		{
 			ROS_INFO("Mission leg Succeeded reported by planner, proceed to the next mission leg...");
 			isCurMLCompleted = true;
+			activePlanner.clear();
 		}else if(state == actionlib::SimpleClientGoalState::PREEMPTED)
 			ROS_INFO("Mission leg preempted reported by planner");
 	}
@@ -254,51 +297,71 @@ public:
 
 	}
 
-	bool contactServers(){
-		if(!c_waypoint.waitForServer(ros::Duration(10,0))){
-			ROS_WARN("Timeout contacting c_waypoint server");
-			return false;
-		}else
-			ROS_INFO("c_waypoint server contacted, continue ...");
-		if(!c_abort.waitForServer(ros::Duration(10,0))){
-			ROS_WARN("Timeout contacting c_abort server");
-			return false;
-		}else
-			ROS_INFO("c_abort server contacted, continue ...");
-		if(!c_lawnmow.waitForServer(ros::Duration(10,0))){
-			ROS_WARN("Timeout contacting c_lawnmow server");
-			return false;
-		}else
-			ROS_INFO("c_lawnmow server contacted, continue ...");
-		if(!c_adaptivesampling.waitForServer(ros::Duration(10,0))){
-			ROS_WARN("Timeout contacting c_adaptivesampling server");
-			return false;
-		}else
-			ROS_INFO("c_adaptivesampling server contacted, continue ...");
+	void abort_result_callback(const actionlib::SimpleClientGoalState& state,
+			const c2_ros::MissionLegResultConstPtr& result)
+	{
 
+	}
+
+	void abort_active_callback()
+	{
+
+	}
+
+	bool contactServers(){
+
+		//contact all the MBHV servers
+		for (int i=0 ; i < pm->count(); i++)
+		{
+			if(!pm->getClient(i)->waitForServer(ros::Duration(10,0)))
+			{
+				ROS_WARN("Timeout contacting [%s] server",pm->getClientName(i).c_str());
+				return false;
+			}
+		}
 		return true;
 	}
 
 	void sendGoal(const c2_ros::MissionLeg& ml){
+
+		if(activePlanner.empty())
+		{
+			ROS_WARN("No active planner exist ! ");
+			return;
+		}
+
 		c2_ros::MissionLegGoal goal;
 		goal.m_leg = c2_ros::MissionLeg(ml);
 
-		if(ml.m_bhv.bhv == bhv.WAY_POINT){
-			c_waypoint.sendGoal(goal,
-					boost::bind(&Captain::goal_result_callback, this, _1,_2),
-					boost::bind(&Captain::goal_active_callback,this),
-					boost::bind(&Captain::goal_feedback_callback,this,_1));
-		}else if (ml.m_bhv.bhv == bhv.LAWNMOW){
-			c_lawnmow.sendGoal(goal,
-					boost::bind(&Captain::goal_result_callback, this, _1,_2),
-					boost::bind(&Captain::goal_active_callback,this),
-					boost::bind(&Captain::goal_feedback_callback,this,_1));
-		}else if (ml.m_bhv.bhv == bhv.ADAPTIVE_SAMPLING){
-			c_adaptivesampling.sendGoal(goal,
+		if(ml.m_bhv.bhv == bhv.ABORT)
+		{
+			pm->getClient(activePlanner)->sendGoal(goal,
+					boost::bind(&Captain::abort_result_callback, this, _1,_2),
+					boost::bind(&Captain::abort_active_callback,this),
+					actionlib::SimpleActionClient<c2_ros::MissionLegAction>::SimpleFeedbackCallback());
+		}
+		else
+		{
+			pm->getClient(activePlanner)->sendGoal(goal,
 					boost::bind(&Captain::goal_result_callback, this, _1,_2),
 					boost::bind(&Captain::goal_active_callback,this),
 					boost::bind(&Captain::goal_feedback_callback,this,_1));
 		}
+	}
+
+	void vehicleOdom(const nav_msgs::Odometry::ConstPtr& odom_pos_est)
+	{
+		curPos.x = odom_pos_est->pose.pose.position.x;
+		curPos.y = odom_pos_est->pose.pose.position.y;
+		curPos.theta = tf::getYaw(odom_pos_est->pose.pose.orientation);
+	}
+
+	void bhv_propose_callback(const c2_ros::BHVProposer::ConstPtr& bhv_proposer)
+	{
+		//TODO future exansion to allow more than one active planner ?
+		//alway take the last one that reply, need to fix this when there is a need in the future
+		//market-based ??
+		activePlanner = std::string(bhv_proposer->name);
 	}
 
 	Captain(std::string name, ros::NodeHandle nh):
@@ -307,25 +370,42 @@ public:
 		nh_(nh),
 		m_leg_cnt(0),
 		curMissionLeg(nullptr),
-		isCurMLCompleted(true),
-		//declare the clients
-		c_waypoint(C2::C2Agent(C2::C2Agent::MBHV_WAYPOINTER).toString(),true),
-		c_abort(C2::C2Agent(C2::C2Agent::MBHV_ABORTER).toString(),true),
-		c_lawnmow(C2::C2Agent(C2::C2Agent::MBHV_LAWNMOWER).toString(),true),
-		c_adaptivesampling(C2::C2Agent(C2::C2Agent::MBHV_ADAPTIVESAMPLER).toString(),true) {
+		isCurMLCompleted(true){
 
 		//retrieve the default value for speed and radius
-		if (!nh_.getParam("/captain_node/captain_params/default_desired_speed",default_speed)) default_speed = DEFAULT_SPEED;
-		if (!nh_.getParam("/captain_node/captain_params/default_m_pt_radius",default_mpt_radius)) default_mpt_radius = DEFAULT_MPT_RADIUS;
+		if (!nh_.getParam("/c2_params/default_desired_speed",default_speed)) default_speed = DEFAULT_SPEED;
+		if (!nh_.getParam("/c2_params/default_m_pt_radius",default_mpt_radius)) default_mpt_radius = DEFAULT_MPT_RADIUS;
+		if (!nh_.getParam("/c2_params/homeX",home_Pos.x)) home_Pos.x = 0;
+		if (!nh_.getParam("/c2_params/homeY",home_Pos.y)) home_Pos.y = 0;
+		double lat,lon;
+		if (nh_.getParam("/c2_params/homeX_lat",lat) &&
+				nh_.getParam("/c2_params/homeY_lon",lon))
+		{
+			geodesy::UTMPoint utmp;
+			geodesy::fromMsg(geodesy::toMsg(lat,lon),utmp);
+			home_Pos.x = utmp.easting;
+			home_Pos.y = utmp.northing;
+		}
 
 		//advertise service
 		srv_cmd = nh_.advertiseService(C2::C2Agent(C2::C2Agent::CAPTAIN).toString(),&C2::Captain::request_cmd_callback,this);
+
+
+		//subscribe to vehicle state
+		std::string odm_name;
+		if (!nh_.getParam("/c2_params/odometry_topic_name",odm_name)) odm_name = "/odometry/filtered";
+		odom_est_sub = nh_.subscribe(odm_name,1, &C2::Captain::vehicleOdom,this);
+
+		//initialize and declare all the MBHV planners.
+		pm = new Planner_Map();
 
 		//make sure all the server exist, or else report error
 		if(!contactServers())
 			setMyState(C2_STATE::ERROR);
 
-
+		//pub and sub to behavior request and proposal
+		bhv_propose_sub = nh_.subscribe("/captain/bhv_propose",100, &Captain::bhv_propose_callback,this);
+		bhv_request_pub = nh_.advertise<c2_ros::C2_BHV>("/captain/bhv_request",100);
 	}
 
 	~Captain(){

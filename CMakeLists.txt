@@ -62,6 +62,7 @@ find_package(catkin REQUIRED COMPONENTS
    MissionPoint.msg
    KeyValue.msg
    ActuatorControl.msg
+   BHVProposer.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -127,6 +128,7 @@ SET(B_FILES
     src/planner.cpp 
     src/mission.cpp
     src/pilot.cpp
+    src/planner_map.cpp
 )
 
 ## Declare a cpp executable
@@ -135,6 +137,7 @@ add_executable(mbhv_waypoint_node src/mbhv_waypoint.cpp ${B_FILES})
 add_executable(mbhv_lawnmow_node src/mbhv_lawnmow.cpp ${B_FILES})
 add_executable(mbhv_adaptivesampling_node src/mbhv_adaptivesampling.cpp ${B_FILES})
 add_executable(mbhv_abort_node src/mbhv_abort.cpp ${B_FILES})
+add_executable(mbhv_loiter_node src/mbhv_loiter.cpp ${B_FILES})
 add_executable(pilot_simulated_node src/pilot_simulated.cpp ${B_FILES})
 add_executable(vehicle_simulator_node src/vehicle_simulator.cpp)
 
@@ -144,6 +147,7 @@ add_executable(vehicle_simulator_node src/vehicle_simulator.cpp)
  add_dependencies(mbhv_waypoint_node c2_ros_generate_messages_cpp)
  add_dependencies(mbhv_lawnmow_node c2_ros_generate_messages_cpp)
  add_dependencies(mbhv_adaptivesampling_node c2_ros_generate_messages_cpp)
+ add_dependencies(mbhv_loiter_node c2_ros_generate_messages_cpp)
  add_dependencies(pilot_simulated_node c2_ros_generate_messages_cpp)
  add_dependencies(vehicle_simulator_node c2_ros_generate_messages_cpp)
 
@@ -153,6 +157,7 @@ target_link_libraries(mbhv_waypoint_node ${catkin_LIBRARIES})
 target_link_libraries(mbhv_lawnmow_node ${catkin_LIBRARIES})
 target_link_libraries(mbhv_adaptivesampling_node ${catkin_LIBRARIES})
 target_link_libraries(mbhv_abort_node ${catkin_LIBRARIES})
+target_link_libraries(mbhv_loiter_node ${catkin_LIBRARIES})
 target_link_libraries(pilot_simulated_node ${catkin_LIBRARIES})
 target_link_libraries(vehicle_simulator_node ${catkin_LIBRARIES})
 

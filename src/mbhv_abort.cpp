@@ -11,7 +11,7 @@ private:
 
 public:
 	MBHV_Abort(std::string name, int loopRate, ros::NodeHandle nh):Planner(name,loopRate,nh){
-
+		registerCapableBHV(c2_ros::C2_BHV::ABORT);
 	}
 
 	~MBHV_Abort(){

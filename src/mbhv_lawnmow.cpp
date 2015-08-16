@@ -11,7 +11,7 @@ private:
 
 public:
 	MBHV_LawnMow(std::string name, int loopRate, ros::NodeHandle nh):Planner(name,loopRate,nh){
-
+		registerCapableBHV(c2_ros::C2_BHV::LAWNMOW);
 	}
 
 	~MBHV_LawnMow(){

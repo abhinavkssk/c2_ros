@@ -9,6 +9,7 @@
 #include <c2_ros/MissionLegAction.h>
 #include <c2_ros/MissionPointAction.h>
 #include <c2_ros/MissionLeg.h>
+#include <c2_ros/C2_BHV.h>
 
 namespace C2 {
 
@@ -20,7 +21,12 @@ private:
 	bool mpointCompleted;
 	bool toTick;
 	int mp_progressPercentage;
+	std::vector<c2_ros::C2_BHV::_bhv_type> capable_bhv;
+
 	ros::Rate loop_rate;
+	ros::Subscriber bhv_request_sub;
+	ros::Publisher bhv_propose_pub;
+	void bhv_request_callback(const c2_ros::C2_BHV::ConstPtr& bhv_request);
 
 	actionlib::SimpleActionServer<c2_ros::MissionLegAction> as_;
 	void goal_callback();
@@ -49,6 +55,7 @@ protected:
 	void sendMLProgress(int percentage_completed);
 	bool isMPointCompleted();
 	int getMPProgress();
+	void registerCapableBHV(c2_ros::C2_BHV::_bhv_type bhv);
 
 	//client for pilot
 	void sendMPoint(const c2_ros::MissionPoint& mpoint, bool isOverwrite = true);

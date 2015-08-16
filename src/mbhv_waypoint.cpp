@@ -17,7 +17,7 @@ public:
 		Planner(name,loopRate,nh),
 		isMLCompleted(false)
 {
-
+		registerCapableBHV(c2_ros::C2_BHV::WAY_POINT);
 }
 
 	~MBHV_WayPoint(){
