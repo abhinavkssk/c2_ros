@@ -58,8 +58,8 @@ protected:
 	void registerCapableBHV(c2_ros::C2_BHV::_bhv_type bhv);
 
 	//client for pilot
-	void sendMPoint(const c2_ros::MissionPoint& mpoint, bool isOverwrite = true);
-	void sendMPoint(std::vector<c2_ros::MissionPoint> mpoints, bool isOverwrite = true);
+	void sendMPoint(const c2_ros::State3D& state3D, bool isOverwrite = true);
+	void sendMPoint(const c2_ros::Trajectory& traj, bool isOverwrite = true);
 
 public:
 	Planner(std::string name, int loopRate, ros::NodeHandle nh);

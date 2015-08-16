@@ -22,7 +22,7 @@ Pilot::Pilot(int loopRate, ros::NodeHandle nh):
 void Pilot::goal_callback()
 {
 	auto goal = as_.acceptNewGoal();
-	newMissionPointAvailable(goal->mission_pt,goal->isOverwrite);
+	newMissionPointAvailable(goal->mission_traj,goal->isOverwrite);
 }
 
 void Pilot::preempt_callback()

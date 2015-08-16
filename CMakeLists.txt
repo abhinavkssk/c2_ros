@@ -59,10 +59,11 @@ find_package(catkin REQUIRED COMPONENTS
    FILES
    C2_BHV.msg
    MissionLeg.msg
-   MissionPoint.msg
    KeyValue.msg
    ActuatorControl.msg
    BHVProposer.msg
+   State3D.msg
+   Trajectory.msg
  )
 
 ## Generate services in the 'srv' folder

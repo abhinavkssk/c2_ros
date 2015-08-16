@@ -4,6 +4,9 @@
 #include <c2_ros/pilot.h>
 #include <c2_ros/c2_agent.h>
 #include <c2_ros/ActuatorControl.h>
+#include <c2_ros/Trajectory.h>
+#include <c2_ros/State3D.h>
+#include <asco_utils/utils.h>
 #include <vector>
 #include <math.h>
 
@@ -14,8 +17,8 @@ class Pilot_Simulated: public Pilot
 private:
 	ros::Subscriber odom_est_sub;
 	ros::Publisher ac_pub;
-	std::vector<c2_ros::MissionPoint> poseToRun;
-	c2_ros::MissionPoint curMP;
+	c2_ros::Trajectory poseToRun;
+	c2_ros::State3D curMP;
 	geometry_msgs::Pose2D curPos;
 
 
@@ -34,7 +37,7 @@ public:
 		curPos.x = odom_pos_est->pose.pose.position.x;
 		curPos.y = odom_pos_est->pose.pose.position.y;
 		curPos.theta = tf::getYaw(odom_pos_est->pose.pose.orientation);
-		curBearing = yaw2bearing(curPos.theta);
+		curBearing = asco::Utils::yaw2bearing(curPos.theta);
 	}
 
 	Pilot_Simulated(int loopRate, ros::NodeHandle nh):
@@ -74,15 +77,16 @@ public:
 				poseCnt = 0;
 			}
 			if(isCurMPReached){
-				if(poseCnt < poseToRun.size())
+				if(poseCnt < poseToRun.trajectory.size())
 				{
-					curMP = poseToRun.at(poseCnt);
-					ROS_INFO("Navigating to x=%f, y=%f",curMP.m_pt.x,curMP.m_pt.y);
-					poseCnt++;
+					curMP = poseToRun.trajectory.at(poseCnt);
+					ROS_INFO("Navigating to x=%f, y=%f",curMP.pose.position.x,curMP.pose.position.y);
 
 					//check vehicle's side angles
 					isCurMPReached = checkDistAngle();
 					if(isCurMPReached) return;
+
+					poseCnt++;
 				}
 				else
 				{
@@ -106,16 +110,16 @@ public:
 		ac_pub.publish(ac);
 	}
 
-	bool navigateTo(c2_ros::MissionPoint mp)
+	bool navigateTo(c2_ros::State3D mp)
 	{
-		double dist = getDist2D(curPos, mp.m_pt);
+		double dist = asco::Utils::getDist2D(curPos, mp.pose);
 		if(dist > mp.m_pt_radius){
 
 			//calculate bearing
-			bearingSP = calAngle(curPos,mp.m_pt);
+			bearingSP = asco::Utils::calAngle(curPos,mp.pose);
 
 			//record speed
-			speedSP = mp.desired_speed;
+			speedSP = mp.twist.linear.x;
 
 			//determine if the wp is on the side of the AUV (make sure to change to AUV's body Frame).
 			float ang1 = (curBearing-90)/180*M_PI;
@@ -142,14 +146,14 @@ public:
 			return false;
 		}
 
-		ROS_INFO("reached x=%f, y=%f",mp.m_pt.x,mp.m_pt.y);
+		ROS_INFO("reached x=%f, y=%f",mp.pose.position.x,mp.pose.position.y);
 		return true;
 	}
 
 	bool checkDistAngle()
 	{
-		float angle = calAngle(curPos, curMP.m_pt);
-		float dist = getDist2D(curPos, curMP.m_pt);
+		float angle = asco::Utils::calAngle(curPos, curMP.pose);
+		float dist = asco::Utils::getDist2D(curPos, curMP.pose);
 		float bearingDiff = fabs(curBearing - angle);
 
 		ROS_INFO("angleToNextPos=%f bearing=%f angleDiff=%f",angle,curBearing,bearingDiff);
@@ -158,12 +162,12 @@ public:
 			//advance at most two points
 			int cnt = 0;
 			while(dist < sideDist && cnt < 2){
-				if(poseCnt < poseToRun.size()) {
-					curMP = poseToRun.at(poseCnt);
+				if(poseCnt < poseToRun.trajectory.size()) {
+					curMP = poseToRun.trajectory.at(poseCnt);
 					poseCnt++;
 					cnt++;
 					ROS_INFO("too close for comfort,waypoint incremented by 1");
-				}else if (poseCnt == poseToRun.size()){
+				}else if (poseCnt == poseToRun.trajectory.size()){
 					return true;
 				}
 			}
@@ -171,50 +175,21 @@ public:
 		return false;
 	}
 
-	double yaw2bearing(double yaw)
-	{
-		double b = 90 - (yaw/M_PI)*180;
-		if(b < 0) b += 360;
-		if(b > 360) b -= 360;
-		return b;
-	}
-
-	//angle between two points in deg
-	double calAngle(geometry_msgs::Pose2D pos1, geometry_msgs::Pose2D pos2)
-	{
-		double dx = pos2.x-pos1.x;
-		double dy = pos2.y-pos1.y;
-		double angle = 0;
-
-		if(dy==0.0&&dx==0.0)
-			angle = 0.0;
-		else
-			angle = -(atan2(dy,dx)-(M_PI/2));
-
-		if(angle<0) angle+=2*M_PI;
-		return angle/M_PI*180;
-	}
-
-	double getDist2D(geometry_msgs::Pose2D pos1, geometry_msgs::Pose2D pos2)
-	{
-		return sqrt(pow((pos1.x - pos2.x),2)+pow((pos1.y - pos2.y),2));
-	}
-
 	void onStop()
 	{
-		poseToRun.clear();
+		poseToRun.trajectory.clear();
 		poseCnt = 0;
 		isCompleted = true;
 		isCurMPReached = true;
 		stopVehicle();
 	}
 
-	void newMissionPointAvailable(std::vector<c2_ros::MissionPoint> poses, bool isOverwrite)
+	void newMissionPointAvailable(c2_ros::Trajectory traj, bool isOverwrite)
 	{
 		ROS_INFO("Mission point received by [%s]",agentName.c_str());
 		if(isCompleted)
 		{
-			poseToRun = std::vector<c2_ros::MissionPoint>(poses);
+			poseToRun.trajectory = c2_ros::Trajectory::_trajectory_type(traj.trajectory);
 			isCompleted = false;
 			isCurMPReached = true;
 			poseCnt = 0;
@@ -223,15 +198,15 @@ public:
 		{
 			if(isOverwrite)
 			{
-				poseToRun = std::vector<c2_ros::MissionPoint>(poses);
+				poseToRun.trajectory = c2_ros::Trajectory::_trajectory_type(traj.trajectory);
 				isReinitialized = true;
 				poseCnt = 0;
 			}
 			else
 			{
-				std::vector<c2_ros::MissionPoint>::iterator it;
-				for(it = poses.begin(); it != poses.end(); it++){
-					poseToRun.push_back(*it);
+				c2_ros::Trajectory::_trajectory_type::iterator it;
+				for(it = traj.trajectory.begin(); it != traj.trajectory.end(); it++){
+					poseToRun.trajectory.push_back(*it);
 				}
 			}
 		}

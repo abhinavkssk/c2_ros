@@ -25,8 +25,8 @@ public:
 	}
 
 	void onGoalReceived(){
+		isMLCompleted = false;
 		ml = getMissionLeg();
-
 	}
 
 	void tick(){
@@ -40,12 +40,10 @@ public:
 			else
 			{
 				ROS_INFO("sending MPoints");
-				c2_ros::MissionPoint p;
-				p.m_pt.x = ml.m_pt.x;
-				p.m_pt.y = ml.m_pt.y;
-				p.altdepth = ml.altdepth;
+				c2_ros::State3D p;
+				p.pose = ml.m_state.pose;
+				p.twist = ml.m_state.twist;
 				p.m_pt_radius = ml.m_pt_radius;
-				p.desired_speed = ml.desired_speed;
 
 				sendMPoint(p);
 
@@ -60,11 +58,12 @@ public:
 	}
 
 	void onStop(){
-
+		isMLCompleted = false;
 	}
 
 	void onMPointFailure(){
 		setMLCompleted(false);
+		isMLCompleted = false;
 	}
 
 };

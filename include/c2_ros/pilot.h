@@ -6,6 +6,7 @@
 
 #include <actionlib/server/simple_action_server.h>
 #include <c2_ros/MissionPointAction.h>
+#include <c2_ros/Trajectory.h>
 
 namespace C2{
 
@@ -24,7 +25,7 @@ protected:
 	std::string agentName;
 	virtual void tick() = 0;
 	virtual void onStop() = 0;
-	virtual void newMissionPointAvailable(std::vector<c2_ros::MissionPoint> mpoints, bool isOverwrite) = 0;
+	virtual void newMissionPointAvailable(c2_ros::Trajectory traj, bool isOverwrite) = 0;
 	void setMPCompleted(bool isSucceeded);
 	void sendMPProgress(int percentage_completed);
 

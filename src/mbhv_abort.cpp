@@ -8,22 +8,50 @@ namespace C2 {
 class MBHV_Abort: public Planner
 {
 private:
+	c2_ros::MissionLeg ml;
+	bool isMLCompleted;
 
 public:
-	MBHV_Abort(std::string name, int loopRate, ros::NodeHandle nh):Planner(name,loopRate,nh){
+	MBHV_Abort(std::string name, int loopRate, ros::NodeHandle nh):
+		Planner(name,loopRate,nh),
+		isMLCompleted(false)
+{
 		registerCapableBHV(c2_ros::C2_BHV::ABORT);
-	}
+}
 
 	~MBHV_Abort(){
 
 	}
 
 	void onGoalReceived(){
-
+		ml = getMissionLeg();
 	}
 
 	void tick(){
+		if(isMPointCompleted())
+		{
+			if(isMLCompleted)
+			{
+				setMLCompleted(true);
+				isMLCompleted = false;
+			}
+			else
+			{
+				if(ml.m_state.twist.linear.x != 0.0)
+				{
+					ROS_INFO("[%s]:sending abort position to pilot",agentName.c_str());
+					c2_ros::State3D p;
+					p.pose = ml.m_state.pose;
+					p.twist = ml.m_state.twist;
+					p.m_pt_radius = ml.m_pt_radius;
 
+					sendMPoint(p);
+				}
+
+				//only one point to send
+				isMLCompleted = true;
+			}
+		}
 	}
 
 	void onStop(){
@@ -31,7 +59,7 @@ public:
 	}
 
 	void onMPointFailure(){
-
+		setMLCompleted(false);
 	}
 
 };

@@ -1,0 +1,6 @@
+[submodule "src/serial"]
+	path = src/serial
+	url = https://github.com/wjwwood/serial.git
+[submodule "src/asco_utils"]
+	path = src/asco_utils
+	url = git@git.lcsr.jhu.edu:ytan17/asco_utils.git

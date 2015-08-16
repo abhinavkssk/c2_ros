@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
+#include <tf/transform_datatypes.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <pwd.h>
@@ -16,6 +17,8 @@
 #include "c2_ros/MissionLeg.h"
 #include <c2_ros/c2_agent.h>
 #include <c2_ros/planner_map.h>
+#include <c2_ros/State3D.h>
+#include <c2_ros/Trajectory.h>
 #include <asco_utils/utils.h>
 
 #include <actionlib/client/simple_action_client.h>
@@ -78,7 +81,7 @@ private:
 		//construct the path and check if the dir exist
 		std::ifstream infile(m_filename.c_str());
 		if (!infile.good()){
-			ROS_WARN("Mission file not exist:[%s]",m_filename.c_str());
+			ROS_WARN("[%s]:Mission file not exist:[%s]",agentName.c_str(),m_filename.c_str());
 			return false;
 		}
 
@@ -110,7 +113,7 @@ private:
 					if(ml.m_pt_radius <= 0.5) ml.m_pt_radius = default_mpt_radius;
 				}
 				else if (cnt == 8){ //heading
-					ml.m_pt.theta = std::stod(token);
+					ml.m_state.pose.orientation = tf::createQuaternionMsgFromYaw(asco::Utils::bearing2yaw(std::stod(token)));
 				}
 				else if (cnt == 9){ // lat
 					lat = std::stod(token);
@@ -119,7 +122,7 @@ private:
 					lon = std::stod(token);
 				}
 				else if (cnt == 11){ //altitude or depth
-					ml.altdepth = std::stod(token);
+					ml.m_state.pose.position.z = std::stod(token);
 				}
 				cnt++;
 			}
@@ -127,12 +130,12 @@ private:
 			//convert lat-lon to UTM
 			geodesy::UTMPoint utmp;
 			geodesy::fromMsg(geodesy::toMsg(lat,lon),utmp);
-			ml.m_pt.x = utmp.easting;
-			ml.m_pt.y = utmp.northing;
+			ml.m_state.pose.position.x = utmp.easting;
+			ml.m_state.pose.position.y = utmp.northing;
 
 
 			//TODO APM mission planner not allow desired speed, hack away !!!
-			ml.desired_speed = default_speed;
+			ml.m_state.twist.linear.x = default_speed;
 
 			//add the mission leg into the mission
 			curMission.add(ml);
@@ -143,7 +146,7 @@ private:
 			return false;
 		}
 
-		ROS_INFO("Mission file [%s] has %d legs",m_filename.c_str(),curMission.getMissionLegCount());
+		ROS_INFO("[%s]:Mission file [%s] has %d legs",agentName.c_str(),m_filename.c_str(),curMission.getMissionLegCount());
 		return true;
 	}
 
@@ -159,8 +162,8 @@ private:
 		return true;
 	}
 	bool onStateEntry(C2_STATE oldState, C2_STATE newState){
-		if(oldState == newState){
-			ROS_WARN("captain already in [%s] state",C2::C2_StateName[(int)oldState]);
+		if(oldState == newState && oldState != C2_STATE::ABORT){
+			ROS_WARN("[%s]: Already in [%s] state",agentName.c_str(),C2::C2_StateName[(int)oldState]);
 			return false;
 		}
 		//TODO onEntry logic checking and possibly house keeping
@@ -202,9 +205,11 @@ private:
 
 	void requestForProposal(c2_ros::C2_BHV bhv)
 	{
+		ROS_INFO("[%s]:Requesting for Planner to handle behavior_type:[%d]",agentName.c_str(),bhv.bhv);
 		c2_ros::C2_BHV b;
 		b.bhv = bhv.bhv;
 		bhv_request_pub.publish(b);
+		//ros::Duration(1).sleep();
 	}
 
 	void run(){
@@ -222,7 +227,11 @@ private:
 					m_leg_cnt++;
 
 					//debug: print out all the mission legs
-					ROS_INFO("bhv:[%d],x:[%f],y:[%f],heading:[%f],mpoint_rad:[%f]",curMissionLeg->m_bhv.bhv,curMissionLeg->m_pt.x,curMissionLeg->m_pt.y,curMissionLeg->m_pt.theta,curMissionLeg->m_pt_radius );
+					ROS_INFO("[%s]::bhv:[%d],x:[%f],y:[%f],heading:[%f],mpoint_rad:[%f]",agentName.c_str(),
+							curMissionLeg->m_bhv.bhv,curMissionLeg->m_state.pose.position.x,
+							curMissionLeg->m_state.pose.position.y,
+							asco::Utils::yaw2bearing(tf::getYaw(curMissionLeg->m_state.pose.orientation)),
+							curMissionLeg->m_pt_radius );
 					sendGoal(*curMissionLeg);
 					isCurMLCompleted = false;
 				}
@@ -262,6 +271,30 @@ public:
 
 			//reassign the activePlanner to aborter
 			activePlanner = C2::C2Agent(C2::C2Agent::MBHV_ABORTER).toString();
+
+			//determine which abort mode
+			c2_ros::MissionLeg abort_ml;
+			abort_ml.m_bhv.bhv = c2_ros::C2_BHV::ABORT;
+			if(request.command == c2_ros::C2_CMD::Request::ABORT_TO_HOME)
+			{
+				abort_ml.m_state.pose.position.x = home_Pos.x;
+				abort_ml.m_state.pose.position.y = home_Pos.y;
+				abort_ml.m_state.twist.linear.x = default_speed;
+				abort_ml.m_pt_radius = default_mpt_radius;
+			}
+			else if(request.command == c2_ros::C2_CMD::Request::ABORT_TO_START_POS)
+			{
+				abort_ml.m_state.pose.position.x = m_startPos.x;
+				abort_ml.m_state.pose.position.y = m_startPos.y;
+				abort_ml.m_state.twist.linear.x = default_speed;
+				abort_ml.m_pt_radius = default_mpt_radius;
+			}
+			else
+			{
+				abort_ml.m_state.twist.linear.x = 0.0;
+			}
+			sendGoal(abort_ml);
+
 			result = setMyState(C2_STATE::ABORT);
 			response.result = result;
 			return result;
@@ -280,7 +313,7 @@ public:
 		}
 		else if(state == actionlib::SimpleClientGoalState::SUCCEEDED)
 		{
-			ROS_INFO("Mission leg Succeeded reported by planner, proceed to the next mission leg...");
+			ROS_INFO("[%s]:Mission leg Succeeded reported by planner, proceed to the next mission leg...",agentName.c_str());
 			isCurMLCompleted = true;
 			activePlanner.clear();
 		}else if(state == actionlib::SimpleClientGoalState::PREEMPTED)
@@ -300,12 +333,27 @@ public:
 	void abort_result_callback(const actionlib::SimpleClientGoalState& state,
 			const c2_ros::MissionLegResultConstPtr& result)
 	{
-
+		if(state == actionlib::SimpleClientGoalState::ABORTED)
+		{
+			ROS_WARN("ABORT failed ! ");
+			setMyState(C2_STATE::ERROR);
+		}
+		else if(state == actionlib::SimpleClientGoalState::SUCCEEDED)
+		{
+			ROS_INFO("[%s]:Mission successfully aborted",agentName.c_str());
+			isCurMLCompleted = true;
+			activePlanner.clear();
+			setMyState(C2_STATE::STANDBY);
+		}else if(state == actionlib::SimpleClientGoalState::PREEMPTED)
+		{
+			ROS_INFO("[%s]:ABORT cancelled",agentName.c_str());
+			setMyState(C2_STATE::STANDBY);
+		}
 	}
 
 	void abort_active_callback()
 	{
-
+		ROS_INFO("Mission in ABORT mode");
 	}
 
 	bool contactServers(){
@@ -315,7 +363,7 @@ public:
 		{
 			if(!pm->getClient(i)->waitForServer(ros::Duration(10,0)))
 			{
-				ROS_WARN("Timeout contacting [%s] server",pm->getClientName(i).c_str());
+				ROS_WARN("[%s]:Timeout contacting [%s] server",agentName.c_str(),pm->getClientName(i).c_str());
 				return false;
 			}
 		}

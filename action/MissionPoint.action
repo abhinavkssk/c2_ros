@@ -1,5 +1,5 @@
 #goal
-MissionPoint[] mission_pt
+Trajectory mission_traj
 bool isOverwrite 							#overwrite the previous goal if true, otherwise, appended to the last goal
 ---
 

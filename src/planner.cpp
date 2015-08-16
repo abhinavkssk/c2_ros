@@ -30,9 +30,9 @@ Planner::Planner(std::string name, int loopRate, ros::NodeHandle nh):
 
 	//connect to pilot server
 	if(!mpoint_client.waitForServer(ros::Duration(10,0)))
-		ROS_WARN("Pilot server can not be connected, in [%s]",agentName.c_str());
+		ROS_WARN("[%s]:Pilot server can not be connected !",agentName.c_str());
 	else
-		ROS_INFO("Pilot server established with [%s], continue ...",agentName.c_str());
+		ROS_INFO("[%s]:Pilot server established, continue ...",agentName.c_str());
 
 	//sub and pub bhv
 	bhv_request_sub = nh_.subscribe("/captain/bhv_request",100, &Planner::bhv_request_callback,this);
@@ -66,10 +66,10 @@ void Planner::spin(){
 	ros::shutdown();
 }
 
-void Planner::sendMPoint(const c2_ros::MissionPoint& mpoint, bool isOverwrite)
+void Planner::sendMPoint(const c2_ros::State3D& state3D, bool isOverwrite)
 {
 	c2_ros::MissionPointGoal goal;
-	goal.mission_pt.push_back(mpoint);
+	goal.mission_traj.trajectory.push_back(state3D);
 	goal.isOverwrite = isOverwrite;
 	mpoint_client.sendGoal(goal,
 			boost::bind(&Planner::mpoint_result_callback, this, _1,_2),
@@ -80,13 +80,13 @@ void Planner::sendMPoint(const c2_ros::MissionPoint& mpoint, bool isOverwrite)
 	mp_progressPercentage = 0;
 }
 
-void Planner::sendMPoint(std::vector<c2_ros::MissionPoint> mpoints, bool isOverwrite)
+void Planner::sendMPoint(const c2_ros::Trajectory& traj, bool isOverwrite)
 {
 	c2_ros::MissionPointGoal goal;
 	goal.isOverwrite = isOverwrite;
-	std::vector<c2_ros::MissionPoint>::iterator it;
-	for (it=mpoints.begin(); it != mpoints.end();it++){
-		goal.mission_pt.push_back(*it);
+	c2_ros::Trajectory::_trajectory_type::const_iterator it;
+	for (it=traj.trajectory.begin(); it != traj.trajectory.end();it++){
+		goal.mission_traj.trajectory.push_back(*it);
 	}
 
 	mpoint_client.sendGoal(goal,
@@ -129,7 +129,7 @@ int Planner::getMPProgress(){return mp_progressPercentage;}
 
 void Planner::goal_callback()
 {
-	ROS_INFO("Mission Leg received in [%s]",agentName.c_str());
+	ROS_INFO("[%s]:Mission Leg received",agentName.c_str());
 
 	//reset all the attributes
 	mpointCompleted = true;
@@ -165,16 +165,16 @@ void Planner::mpoint_result_callback(const actionlib::SimpleClientGoalState& sta
 {
 	if(state == actionlib::SimpleClientGoalState::ABORTED)
 	{
-		ROS_INFO("Mission point failure reported by pilot");
+		ROS_INFO("[%s]:Mission point failure reported by pilot",agentName.c_str());
 		onMPointFailure();
 	}
 	else if(state == actionlib::SimpleClientGoalState::SUCCEEDED)
 	{
-		ROS_INFO("Mission point Succeeded reported by pilot");
+		ROS_INFO("[%s]:Mission point Succeeded reported by pilot",agentName.c_str());
 		mp_progressPercentage = 100;
 		mpointCompleted = true;
 	}else if(state == actionlib::SimpleClientGoalState::PREEMPTED)
-		ROS_INFO("Mission point preempted reported by pilot");
+		ROS_INFO("[%s]:Mission point preempted reported by pilot",agentName.c_str());
 }
 
 void Planner::mpoint_active_callback()
