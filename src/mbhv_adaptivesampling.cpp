@@ -6,6 +6,8 @@
 #include <c2_ros/State3D.h>
 #include <c2_ros/Trajectory.h>
 
+#include <visualization_msgs/Marker.h>
+#include <geometry_msgs/Point.h>
 
 namespace C2 {
 
@@ -18,6 +20,9 @@ private:
 	ros::Subscriber adp_path_sub;
 	ros::Publisher adp_start_pub;
 
+	//rviz
+	ros::Publisher marker_pub;
+
 public:
 	MBHV_AdaptiveSampling(std::string name, int loopRate, ros::NodeHandle nh):
 		Planner(name,loopRate,nh),
@@ -26,6 +31,8 @@ public:
 
 		adp_path_sub = nh_.subscribe("/adp_path",10, &C2::MBHV_AdaptiveSampling::ADPPath_callback,this);
 		adp_start_pub = nh_.advertise<std_msgs::Bool>("/adp_start",100);
+
+		marker_pub = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 10);
 
 	}
 
@@ -71,6 +78,19 @@ public:
 	{
 		//this check is needed in case matlab node is misbehaving
 		if(!isBHVStopped){
+			//rviz
+			//post to rviz
+			visualization_msgs::Marker line_strip;
+			line_strip.id = 1000;
+			line_strip.type = visualization_msgs::Marker::LINE_STRIP;
+			line_strip.scale.x = 1;
+			// Line strip is blue
+			line_strip.color.b = 1.0;
+			line_strip.color.a = 1.0;
+
+
+
+
 			//translate it into C2 framework's Trajectory
 			c2_ros::Trajectory traj;
 			nav_msgs::Path::_poses_type::const_iterator it;
@@ -80,10 +100,19 @@ public:
 				p.twist.linear.x = 2;
 				p.m_pt_radius = 0.5;
 				traj.trajectory.push_back(p);
+
+				//rviz
+				geometry_msgs::Point point;
+				point.x = it->pose.position.x;
+				point.y = it->pose.position.y;
+				line_strip.points.push_back(point);
 			}
 
 			//overwrite the previous point
 			sendMPoint(traj,true);
+
+			//post to rviz
+			marker_pub.publish(line_strip);
 		}
 	}
 
