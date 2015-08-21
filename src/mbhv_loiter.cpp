@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
+#include <geometry_msgs/Pose2D.h>
 #include <tf/transform_datatypes.h>
 #include <c2_ros/c2_agent.h>
 #include <c2_ros/planner.h>
