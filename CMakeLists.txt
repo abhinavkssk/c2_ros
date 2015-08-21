@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   geodesy
   tf
   tf2_ros
+  visualization_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -87,6 +88,7 @@ find_package(catkin REQUIRED COMPONENTS
    std_msgs
    geometry_msgs 
    geographic_msgs
+   visualization_msgs
  )
 
 ###################################

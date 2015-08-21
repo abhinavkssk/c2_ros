@@ -6,6 +6,8 @@
 #include <vector>
 #include <math.h>
 
+#include <visualization_msgs/Marker.h>
+
 #define PIdiv2 M_PI/2
 #define PItim2 M_PI*2
 
@@ -20,7 +22,7 @@ private:
 	ros::Subscriber ac_sun;
 
 	//param
-	double turnRate = 10;
+	double turnRate = 20;
 	double diveMinSpeed = 1;
 	double diveDownRate = 0.2;
 	double diveUpRate = 0.5;

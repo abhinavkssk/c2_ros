@@ -1,4 +1,7 @@
 <launch>
+
+  <arg name="global_yaml" />
+  
   <env name="ROSCONSOLE_CONFIG_FILE" 
        value="$(find c2_ros)/config/custom_rosconsole.conf"/>
 

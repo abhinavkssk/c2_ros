@@ -106,6 +106,8 @@ private:
 					int bhv_num = std::stoi(token);
 					if(bhv_num == 16)
 						ml.m_bhv.bhv = bhv.WAY_POINT;
+					else if(bhv_num == 17)
+						ml.m_bhv.bhv = bhv.ADAPTIVE_SAMPLING;
 					//TODO fill in the rest !
 				}
 				else if (cnt == 6){ // mission_pt_radius
