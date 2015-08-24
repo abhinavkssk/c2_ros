@@ -146,13 +146,13 @@ add_executable(vehicle_simulator_node src/vehicle_simulator.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
- add_dependencies(captain_node c2_ros_generate_messages_cpp)
- add_dependencies(mbhv_waypoint_node c2_ros_generate_messages_cpp)
- add_dependencies(mbhv_lawnmow_node c2_ros_generate_messages_cpp)
- add_dependencies(mbhv_adaptivesampling_node c2_ros_generate_messages_cpp)
- add_dependencies(mbhv_loiter_node c2_ros_generate_messages_cpp)
- add_dependencies(pilot_simulated_node c2_ros_generate_messages_cpp)
- add_dependencies(vehicle_simulator_node c2_ros_generate_messages_cpp)
+ add_dependencies(captain_node c2_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+ add_dependencies(mbhv_waypoint_node c2_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+ add_dependencies(mbhv_lawnmow_node c2_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+ add_dependencies(mbhv_adaptivesampling_node c2_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+ add_dependencies(mbhv_loiter_node c2_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+ add_dependencies(pilot_simulated_node c2_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+ add_dependencies(vehicle_simulator_node c2_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(captain_node ${catkin_LIBRARIES})

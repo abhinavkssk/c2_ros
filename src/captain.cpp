@@ -1,5 +1,6 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
+#include <geometry_msgs/Pose2D.h>
 #include <tf/transform_datatypes.h>
 #include <unistd.h>
 #include <sys/types.h>
