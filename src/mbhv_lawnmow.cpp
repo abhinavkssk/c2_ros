@@ -72,7 +72,6 @@ public:
 			}
 			else
 			{
-
 				//only one set of points to send
 				isMLCompleted = true;
 				sendMPoint(generateLMPath());
