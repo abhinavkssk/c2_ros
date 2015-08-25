@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(c2_ros)
 
 set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
-
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -20,8 +20,24 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   tf2_ros
   visualization_msgs
+  mavros
+  dynamic_reconfigure
+  message_generation
+  gcop_comm
+  enu
+  gcop_ros_est
 )
 
+find_package(OpenCV REQUIRED)
+find_package(GCOP REQUIRED algos systems views est utils)
+
+find_package(TinyXML REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(GLU REQUIRED)
+find_package(GLUT REQUIRED)
+find_package(OpenGL REQUIRED)
+
+find_library(SWIFTNAV swiftnav)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -65,8 +81,15 @@ find_package(catkin REQUIRED COMPONENTS
    BHVProposer.msg
    State3D.msg
    Trajectory.msg
+   Ctrl.msg
+	 State.msg
+	 CtrlTraj.msg
  )
 
+generate_dynamic_reconfigure_options(
+  cfg/configg.cfg
+	cfg/mavros_ctrl.cfg
+)
 ## Generate services in the 'srv' folder
  add_service_files(
    FILES
@@ -118,6 +141,9 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${mavros_INCLUDE_DIRS}
+	${GCOP_INCLUDE_DIRS}
+	${EIGEN3_INCLUDE_DIR}
 )
 
 ## Declare a cpp library
@@ -142,6 +168,7 @@ add_executable(mbhv_adaptivesampling_node src/mbhv_adaptivesampling.cpp ${B_FILE
 add_executable(mbhv_abort_node src/mbhv_abort.cpp ${B_FILES})
 add_executable(mbhv_loiter_node src/mbhv_loiter.cpp ${B_FILES})
 add_executable(pilot_simulated_node src/pilot_simulated.cpp ${B_FILES})
+add_executable(pilot_ddp src/pilot_ddp.cpp ${B_FILES})
 add_executable(vehicle_simulator_node src/vehicle_simulator.cpp)
 
 ## Add cmake target dependencies of the executable/library
@@ -152,16 +179,23 @@ add_executable(vehicle_simulator_node src/vehicle_simulator.cpp)
  add_dependencies(mbhv_adaptivesampling_node c2_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
  add_dependencies(mbhv_loiter_node c2_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
  add_dependencies(pilot_simulated_node c2_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+  add_dependencies(pilot_ddp ${PROJECT_NAME}_gencfg gcop_comm_generate_messages_cpp c2_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
  add_dependencies(vehicle_simulator_node c2_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(captain_node ${catkin_LIBRARIES})
+target_link_libraries(captain_node ${catkin_LIBRARIES}  ${TINYXML_LIBRARIES} ${SWIFTNAV})
 target_link_libraries(mbhv_waypoint_node ${catkin_LIBRARIES})
 target_link_libraries(mbhv_lawnmow_node ${catkin_LIBRARIES})
 target_link_libraries(mbhv_adaptivesampling_node ${catkin_LIBRARIES})
 target_link_libraries(mbhv_abort_node ${catkin_LIBRARIES})
 target_link_libraries(mbhv_loiter_node ${catkin_LIBRARIES})
 target_link_libraries(pilot_simulated_node ${catkin_LIBRARIES})
+target_link_libraries(pilot_ddp 		     ${GCOP_LIBRARIES}
+		      ${OpenCV_LIBRARIES}
+	      ${TINYXML_LIBRARIES}
+	      ${catkin_LIBRARIES}
+	       ${mavros_LIBRARIES} 
+	       )
 target_link_libraries(vehicle_simulator_node ${catkin_LIBRARIES})
 
 

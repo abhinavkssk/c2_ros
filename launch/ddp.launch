@@ -1,0 +1,20 @@
+<launch>
+
+  <arg name="global_yaml" />
+  
+  <env name="ROSCONSOLE_CONFIG_FILE" 
+       value="$(find c2_ros)/config/custom_rosconsole.conf"/>
+
+  <rosparam param="c2_params" command="load" file="$(find c2_ros)/config/c2_params.yaml" />  
+
+
+  <node name="pilot_ddp" pkg="c2_ros" type="pilot_ddp" output="screen" clear_params="true" required="true" />  
+  <node name="mbhv_abort_node" pkg="c2_ros" type="mbhv_abort_node" output="screen" clear_params="true" required="true" />  
+  <node name="mbhv_adaptivesampling_node" pkg="c2_ros" type="mbhv_adaptivesampling_node" output="screen" clear_params="true" required="true" />  
+  <node name="mbhv_lawnmow_node" pkg="c2_ros" type="mbhv_lawnmow_node" output="screen" clear_params="true" required="true" />  
+  <node name="mbhv_waypoint_node" pkg="c2_ros" type="mbhv_waypoint_node" output="screen" clear_params="true" required="true" />  
+  <node name="mbhv_loiter_node" pkg="c2_ros" type="mbhv_loiter_node" output="screen" clear_params="true" required="true" />  
+  <node name="captain_node" pkg="c2_ros" type="captain_node" output="screen" clear_params="true" required="true" /> 
+
+  
+</launch>

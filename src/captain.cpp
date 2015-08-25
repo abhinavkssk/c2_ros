@@ -26,6 +26,8 @@
 #include <c2_ros/MissionLegAction.h>
 #include <geodesy/utm.h>
 
+#include <c2_ros/llh_enu_cov.h>
+#include <enu/enu.h>
 c2_ros::C2_BHV bhv;
 
 using C2::C2_STATE;
@@ -64,7 +66,7 @@ private:
 	bool isCurMLCompleted;
 	double default_speed;
 	double default_mpt_radius;
-
+	double home_lat,home_lon;
 	bool loadMissionFile(){
 
 		//clear the previous mission
@@ -137,6 +139,12 @@ private:
 			ml.m_state.pose.position.y = utmp.northing;
 
 
+  Vector3d llh;     llh  << lat*M_PI/180.0,lon*M_PI/180.0, 0 ;
+  Vector3d llh0;    llh0 << home_lat*M_PI/180.0         ,home_lon*M_PI/180.0 , 0 ;
+  Vector3d xyz_gps; llhSI2EnuSI(xyz_gps, llh, llh0);
+			
+			ml.m_state.pose.position.x = xyz_gps(0);
+			ml.m_state.pose.position.y = xyz_gps(1);
 			//TODO APM mission planner not allow desired speed, hack away !!!
 			ml.m_state.twist.linear.x = default_speed;
 
@@ -432,6 +440,8 @@ public:
 		if (nh_.getParam("/c2_params/homeX_lat",lat) &&
 				nh_.getParam("/c2_params/homeY_lon",lon))
 		{
+			home_lat=lat;
+			home_lon=lon;
 			geodesy::UTMPoint utmp;
 			geodesy::fromMsg(geodesy::toMsg(lat,lon),utmp);
 			home_Pos.x = utmp.easting;
