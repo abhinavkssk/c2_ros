@@ -1,0 +1,19 @@
+<launch>
+
+	<arg name="global_yaml" value="$(find c2_ros)/config/global.yaml" />
+
+	<!-- c2_ros -->
+	<include file="$(find c2_ros)/launch/ddp.launch">
+		<arg name="global_yaml" value="$(arg global_yaml)" />
+	</include>
+
+	<!-- insekf -->
+	<include file="$(find gcop_ros_est)/launch/insekf_mavros.launch">
+		<arg name="global_yaml" value="$(arg global_yaml)" />
+	</include>
+
+	<!-- ddp_controller -->
+	<!--include file="$(find differential_control_usv)/launch/usv.launch"-->
+
+
+</launch>
