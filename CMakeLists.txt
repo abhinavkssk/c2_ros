@@ -25,7 +25,6 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   gcop_comm
   enu
-  gcop_ros_est
 )
 
 find_package(OpenCV REQUIRED)
