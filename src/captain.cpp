@@ -76,7 +76,7 @@ private:
 
 		//get mission path from param server
 		std::string m_filename;
-		if (!nh_.getParam("/captain_node/captain_params/mission_file_location",m_filename)) m_filename = homedir + mPath;
+		if (!nh_.getParam("/c2_params/mission_file_location",m_filename)) m_filename = homedir + mPath;
 
 
 		//construct the path and check if the dir exist
@@ -89,7 +89,14 @@ private:
 		//file exist, proceeed
 		//the processing is according to APM 2.0 GUI (QGC WPL 110)
 		std::string line;
-		double lat,lon;
+		double lat,lon,lat_origin,lon_origin;
+
+		//get the lat-lon origin
+		nh_.getParam("/c2_params/lat_origin",lat_origin);
+		nh_.getParam("/c2_params/lon_origin",lon_origin);
+		geodesy::UTMPoint utmp_ori;
+		geodesy::fromMsg(geodesy::toMsg(lat_origin,lon_origin),utmp_ori);
+
 		while (std::getline(infile, line))
 		{
 			std::istringstream iss(line);
@@ -133,8 +140,8 @@ private:
 			//convert lat-lon to UTM
 			geodesy::UTMPoint utmp;
 			geodesy::fromMsg(geodesy::toMsg(lat,lon),utmp);
-			ml.m_state.pose.position.x = utmp.easting;
-			ml.m_state.pose.position.y = utmp.northing;
+			ml.m_state.pose.position.x = utmp.easting - utmp_ori.easting;
+			ml.m_state.pose.position.y = utmp.northing - utmp_ori.northing;
 
 
 			//TODO APM mission planner not allow desired speed, hack away !!!
