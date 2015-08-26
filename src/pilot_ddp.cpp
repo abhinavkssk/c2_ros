@@ -30,7 +30,7 @@
 #include <stdio.h>
 
 
-
+#define MAX_SPEED 10
 using namespace std;
 using namespace Eigen;
 using namespace gcop;
@@ -47,7 +47,7 @@ typedef Matrix< double , 6 , 1> Vector6d;
 	float eeps=1e-3;
 	gcop_comm::CtrlTraj trajectory;
 	ros::Publisher trajpub;
-	
+	ros::Subscriber odom_est_sub;
 	double  thrust_offset=0;
 		
 	Body2dForce<2> force;
@@ -218,11 +218,18 @@ class Pilot_Ddp: public Pilot
 private:
 	c2_ros::Trajectory poseToRun;
 	c2_ros::State3D curMP;
-
+	
+	c2_ros::Trajectory subTraj;
+	c2_ros::State3D subPose;
+	int subPosecnt=0;
+	
+	
 	int poseCnt;
 	bool isCompleted;
 	bool isReinitialized;
 	bool isCurMPReached=false;
+	bool isCurSubMPReached=false;
+	bool isSubTrajRequired=false;
 	double curBearing,bearingSP, speedSP;
 	ros::Publisher actuator_controls_pub;
 	float sideDist = 20;
@@ -240,16 +247,13 @@ public:
 {
 	 actuator_controls_pub = nh.advertise<mavros::ActuatorControl>("/mavros/actuator_control", 1000);
 		
-	
+	std::string odm_name;
+		if (!nh_.getParam("/c2_params/odometry_topic_name",odm_name)) odm_name = "/insekf/pose";
+		odom_est_sub = nh.subscribe(odm_name,1000, odom_x_est);
 
 
-	ros::Subscriber odom_est_sub = nh.subscribe("/insekf/pose",1000, odom_x_est);
 
-	dynamic_reconfigure::Server<c2_ros::DDPInterfaceConfig> server;
-  	dynamic_reconfigure::Server<c2_ros::DDPInterfaceConfig>::CallbackType f;
 
-	f = boost::bind(&paramreqcallback, _1, _2);
-  	server.setCallback(f);
 	trajpub = nh.advertise<gcop_comm::CtrlTraj>("/usvnode/ctrltraj",1);
 
 	
@@ -305,6 +309,36 @@ public:
 
 	}
 
+	void getSubTraj(geometry_msgs::Pose2D pose,c2_ros::State3D MP,int parts)
+	{
+	
+		for (int k=1;k<=parts;k++)
+		{
+			double i=(k*1.0)/(parts*1.0);
+			c2_ros::State3D subState;
+			subState.header=MP.header;
+			subState.m_pt_radius=MP.m_pt_radius;
+			subState.pose.orientation=MP.pose.orientation;
+			subState.pose.position.x = pose.x * (1-i) + MP.pose.position.x * i;
+			subState.pose.position.y = pose.y * (1-i) + MP.pose.position.y * i ;
+			subState.twist=MP.twist;
+			subTraj.trajectory.push_back(subState);
+		}
+	
+	}
+
+
+	void resetSubStates()
+	{
+		subTraj.trajectory.clear();
+		subPosecnt=0;
+		isCurSubMPReached=false;
+		isSubTrajRequired=false;
+	
+	}
+
+
+
 	void tick()
 	{
 		if(!isCompleted)
@@ -323,7 +357,15 @@ public:
 					isCurMPReached = false;
 					curMP = poseToRun.trajectory.at(poseCnt);
 					ROS_INFO("Navigating to x=%f, y=%f",curMP.pose.position.x,curMP.pose.position.y);
+					double curDist=asco::Utils::getDist2D(curPos, curMP.pose);
+					if(curDist> MAX_SPEED*tfinal)
+					{
+						isSubTrajRequired=true;
+						getSubTraj(curPos, curMP,(int)ceil(curDist/(MAX_SPEED*tfinal*1.0)));
+						isCurSubMPReached=true;
+					}
 					
+					else isSubTrajRequired=false;
 					//check vehicle's side angles
 				//	isCurMPReached = checkDistAngle();
 				//	if(isCurMPReached) return;
@@ -338,11 +380,48 @@ public:
 					return;
 				}
 			}
-
-			if(navigateTo(curMP))
+			
+			if(!isSubTrajRequired)
 			{
-				isCurMPReached = true;
+				if(navigateTo(curMP))
+				{
+					isCurMPReached = true;
+				
+				}
 			}
+			else
+			{
+				if(isCurSubMPReached){
+				if(subPosecnt < subTraj.trajectory.size())
+				{
+					isCurSubMPReached = false;
+					subPose = subTraj.trajectory.at(subPosecnt);
+					ROS_INFO("Navigating in Sub Trajectory to to x=%f, y=%f",subPose.pose.position.x,subPose.pose.position.y);
+
+					subPosecnt++;
+				}
+				else
+				{
+					ROS_INFO("Sub Trajectory Completed");
+					resetSubStates();
+					return;
+				}
+			}
+				
+			
+				if(navigateTo(subPose))
+				{
+					isCurSubMPReached = true;
+				
+				}
+			
+			
+			
+			
+			}
+			
+			
+			
 		}
 	}
 
@@ -368,10 +447,10 @@ public:
 	bool navigateTo(c2_ros::State3D mp)
 	{
 		//simulate succeed
-			double dist = asco::Utils::getDist2D(curPos, mp.pose);	
+			double dist = asco::Utils::getDist2D(curPos, mp.pose);
+			
 		if(dist > mp.m_pt_radius){
-		mp.pose.position.x=1;
-		mp.pose.position.y=2;
+
 		poseTwistToState(xf,mp.pose,mp.twist);
 			LqCost<Body2dState, 6, 2> cost(sys, tfinal, xf);
 			cost.Q = Q.asDiagonal();
@@ -512,6 +591,12 @@ int main (int argc, char ** argv)
 {
 	ros::init(argc, argv, C2::C2Agent(C2::C2Agent::PILOT).toString());
 	ros::NodeHandle nh;
+	        dynamic_reconfigure::Server<c2_ros::DDPInterfaceConfig> server;
+        dynamic_reconfigure::Server<c2_ros::DDPInterfaceConfig>::CallbackType f;
+
+        f = boost::bind(&paramreqcallback, _1, _2);
+        server.setCallback(f);
+
 	C2::Pilot_Ddp c(10,nh);
 	c.spin();
 

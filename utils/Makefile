@@ -1,6 +1,6 @@
 include Makefile.inc
 
-RHOST = 172.16.177.175
+RHOST = 192.168.1.71
 
 #upload the local mission file to the remote machine
 upload-mission:
