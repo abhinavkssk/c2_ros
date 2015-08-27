@@ -8,10 +8,10 @@
 
 default_desired_speed   :  1,
 default_m_pt_radius     :  5,
-#mission_file_location   :  ~/Missions/mission.txt,  
+mission_file_location   :  /home/odroid/Missions/mission.txt,  
 #home location, lat lon takes precedence
-homeX_lat      : 39.3265546541211108,
-homeY_lon      : -76.6221714019775391,
+home_lat      : 39.3265546541211108,
+home_lon      : -76.6221714019775391,
 homeX          : 0,
 homeY          : 0,
 
@@ -26,10 +26,6 @@ thrustScale : 1,  #scale of thrust to speed conversion
 #ocean current simulation 
 currentSpeed    : 0, #meter per second
 currentYaw      : 0, #radian
-
-#vehicle start location, lat lon takes precedence
-#startX_lat      : 39.3265546541211108,
-#startY_lon      : -76.6221714019775391,
 
 startX          : 0,
 startY          : 0
