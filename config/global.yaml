@@ -3,8 +3,12 @@
 ################# map origin #####################
 
 # [lat,lon,altidude]
-map_0 : []
+map0: [39.3257305556 , -76.6223472222 , 0.0]
 
+################# Odometry topic #####################
+odometry_topic_name     : /insekf_pose,
 
+################# Filter frequency #####################
+hz_odom:  20.0  # Freq at which odometric data is published
 
 }

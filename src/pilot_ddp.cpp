@@ -30,7 +30,7 @@
 #include <stdio.h>
 
 
-#define MAX_SPEED 10
+#define MAX_SPEED 5
 using namespace std;
 using namespace Eigen;
 using namespace gcop;
@@ -56,7 +56,7 @@ typedef Matrix< double , 6 , 1> Vector6d;
 	Vector2d u(0,0);
 	vector<Vector2d> us(N, u);
 	double tfinal = 5;
-	geometry_msgs::Pose2D curPos;
+	//geometry_msgs::Pose2D curPos;
 
 void paramreqcallback(c2_ros::DDPInterfaceConfig &config, uint32_t level) 
 {
@@ -110,10 +110,10 @@ void paramreqcallback(c2_ros::DDPInterfaceConfig &config, uint32_t level)
 	R(0) = config.R1;
 	R(1) = config.R2;
 
-  	iters = config.Nit;
+  iters = config.Nit;
 	MU=config.mu;
-eeps=pow(10,config.eps);
-thrust_offset=config.thrust_offset;
+	eeps=pow(10,config.eps);
+	thrust_offset=config.thrust_offset;
 }
 
 void pubtraj(vector<pair<Matrix3d, Vector3d> > xss,vector<Vector2d> uss,Body2dState xfs,vector<double> tss) //N is the number of segments
@@ -178,13 +178,25 @@ void poseTwistToState(Body2dState &x,const geometry_msgs::Pose pose,const geomet
 
 }
 
+geometry_msgs::Pose2D StatetoPose2D(const Body2dState x)
+{
+	Vector3d xpose;
+	geometry_msgs::Pose2D pose;
+	const Matrix3d x_gmat=x.first;
+	SE2::Instance().g2q(xpose, x_gmat);
+	pose.x=xpose(0);
+	pose.y=xpose(1);
+	pose.theta=xpose(2);
+	return pose;
+}
+
 
 	void odom_x_est(const nav_msgs::Odometry::ConstPtr& odom_pos_est)
 {
 	poseTwistToState(x0,odom_pos_est->pose.pose,odom_pos_est->twist.twist);
-		curPos.x = odom_pos_est->pose.pose.position.x;
-		curPos.y = odom_pos_est->pose.pose.position.y;
-		curPos.theta = tf::getYaw(odom_pos_est->pose.pose.orientation);
+		//curPos.x = odom_pos_est->pose.pose.position.x;
+		//curPos.y = odom_pos_est->pose.pose.position.y;
+		//curPos.theta = tf::getYaw(odom_pos_est->pose.pose.orientation);
 
 }
 
@@ -248,7 +260,7 @@ public:
 	 actuator_controls_pub = nh.advertise<mavros::ActuatorControl>("/mavros/actuator_control", 1000);
 		
 	std::string odm_name;
-		if (!nh_.getParam("/c2_params/odometry_topic_name",odm_name)) odm_name = "/insekf/pose";
+		if (!nh_.getParam("/global_params/odometry_topic_name",odm_name)) odm_name = "/insekf/pose";
 		odom_est_sub = nh.subscribe(odm_name,1000, odom_x_est);
 
 
@@ -357,11 +369,11 @@ public:
 					isCurMPReached = false;
 					curMP = poseToRun.trajectory.at(poseCnt);
 					ROS_INFO("Navigating to x=%f, y=%f",curMP.pose.position.x,curMP.pose.position.y);
-					double curDist=asco::Utils::getDist2D(curPos, curMP.pose);
+					double curDist=asco::Utils::getDist2D(StatetoPose2D(x0), curMP.pose);
 					if(curDist> MAX_SPEED*tfinal)
 					{
 						isSubTrajRequired=true;
-						getSubTraj(curPos, curMP,(int)ceil(curDist/(MAX_SPEED*tfinal*1.0)));
+						getSubTraj(StatetoPose2D(x0), curMP,(int)ceil(curDist/(MAX_SPEED*tfinal*1.0)));
 						isCurSubMPReached=true;
 					}
 					
@@ -447,7 +459,7 @@ public:
 	bool navigateTo(c2_ros::State3D mp)
 	{
 		//simulate succeed
-			double dist = asco::Utils::getDist2D(curPos, mp.pose);
+			double dist = asco::Utils::getDist2D(StatetoPose2D(x0), mp.pose);
 			
 		if(dist > mp.m_pt_radius){
 
@@ -523,8 +535,8 @@ public:
 
 	bool checkDistAngle()
 	{
-		float angle = asco::Utils::calAngle(curPos, curMP.pose);
-		float dist = asco::Utils::getDist2D(curPos, curMP.pose);
+		float angle = asco::Utils::calAngle(StatetoPose2D(x0), curMP.pose);
+		float dist = asco::Utils::getDist2D(StatetoPose2D(x0), curMP.pose);
 		float bearingDiff = fabs(curBearing - angle);
 
 		ROS_INFO("angleToNextPos=%f bearing=%f angleDiff=%f",angle,curBearing,bearingDiff);
@@ -553,7 +565,7 @@ public:
 		poseCnt = 0;
 		isCompleted = true;
 		isCurMPReached = true;
-				stopVehicle();
+		stopVehicle();
 
 	}
 
