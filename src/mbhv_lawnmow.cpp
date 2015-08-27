@@ -31,7 +31,7 @@ public:
 
 		//subscribe to vehicle state
 		std::string odm_name;
-		if (!nh_.getParam("/c2_params/odometry_topic_name",odm_name)) odm_name = "/odometry/filtered";
+		if (!nh_.getParam("/global_params/odometry_topic_name",odm_name)) odm_name = "/odometry/filtered";
 		odom_est_sub = nh_.subscribe(odm_name,1, &C2::MBHV_LawnMow::odom_est,this);
 
 		//TODO: since the mission planning hasn't have a way to specify the parameters required for the LM planner, just read them from the parameter server for now.

@@ -24,10 +24,10 @@
 
 #include <actionlib/client/simple_action_client.h>
 #include <c2_ros/MissionLegAction.h>
-#include <geodesy/utm.h>
 
 #include <c2_ros/llh_enu_cov.h>
 #include <enu/enu.h>
+
 c2_ros::C2_BHV bhv;
 
 using C2::C2_STATE;
@@ -67,6 +67,7 @@ private:
 	double default_speed;
 	double default_mpt_radius;
 	double home_lat,home_lon;
+	double origin_lat,origin_lon;
 	bool loadMissionFile(){
 
 		//clear the previous mission
@@ -91,13 +92,7 @@ private:
 		//file exist, proceeed
 		//the processing is according to APM 2.0 GUI (QGC WPL 110)
 		std::string line;
-		double lat,lon,lat_origin,lon_origin;
-
-		//get the lat-lon origin
-		nh_.getParam("/c2_params/lat_origin",lat_origin);
-		nh_.getParam("/c2_params/lon_origin",lon_origin);
-		geodesy::UTMPoint utmp_ori;
-		geodesy::fromMsg(geodesy::toMsg(lat_origin,lon_origin),utmp_ori);
+		double lat,lon;
 
 		while (std::getline(infile, line))
 		{
@@ -139,17 +134,10 @@ private:
 				cnt++;
 			}
 
-			//convert lat-lon to UTM
-			geodesy::UTMPoint utmp;
-			geodesy::fromMsg(geodesy::toMsg(lat,lon),utmp);
-			ml.m_state.pose.position.x = utmp.easting - utmp_ori.easting;
-			ml.m_state.pose.position.y = utmp.northing - utmp_ori.northing;
+			Vector3d llh;     llh  << lat*M_PI/180.0,lon*M_PI/180.0, 0 ;
+			Vector3d llh0;    llh0 << origin_lat*M_PI/180.0         ,origin_lat*M_PI/180.0 , 0 ;
+			Vector3d xyz_gps; llhSI2EnuSI(xyz_gps, llh, llh0);
 
-
-  Vector3d llh;     llh  << lat*M_PI/180.0,lon*M_PI/180.0, 0 ;
-  Vector3d llh0;    llh0 << home_lat*M_PI/180.0         ,home_lon*M_PI/180.0 , 0 ;
-  Vector3d xyz_gps; llhSI2EnuSI(xyz_gps, llh, llh0);
-			
 			ml.m_state.pose.position.x = xyz_gps(0);
 			ml.m_state.pose.position.y = xyz_gps(1);
 			//TODO APM mission planner not allow desired speed, hack away !!!
@@ -438,21 +426,30 @@ public:
 		curMissionLeg(nullptr),
 		isCurMLCompleted(true){
 
+		//get the origin of the operation area
+		if (!nh_.getParam("/global_params/map0",origin_lat) ||
+				!nh_.getParam("/global_params/map0",origin_lon))
+		{
+			ROS_WARN("Origin of the map not set ! ");
+		}
+
 		//retrieve the default value for speed and radius
 		if (!nh_.getParam("/c2_params/default_desired_speed",default_speed)) default_speed = DEFAULT_SPEED;
 		if (!nh_.getParam("/c2_params/default_m_pt_radius",default_mpt_radius)) default_mpt_radius = DEFAULT_MPT_RADIUS;
 		if (!nh_.getParam("/c2_params/homeX",home_Pos.x)) home_Pos.x = 0;
 		if (!nh_.getParam("/c2_params/homeY",home_Pos.y)) home_Pos.y = 0;
 		double lat,lon;
-		if (nh_.getParam("/c2_params/homeX_lat",lat) &&
-				nh_.getParam("/c2_params/homeY_lon",lon))
+		if (nh_.getParam("/c2_params/home_lat",lat) &&
+				nh_.getParam("/c2_params/home_lon",lon))
 		{
 			home_lat=lat;
 			home_lon=lon;
-			geodesy::UTMPoint utmp;
-			geodesy::fromMsg(geodesy::toMsg(lat,lon),utmp);
-			home_Pos.x = utmp.easting;
-			home_Pos.y = utmp.northing;
+			Vector3d llh;     llh  << lat*M_PI/180.0,lon*M_PI/180.0, 0 ;
+			Vector3d llh0;    llh0 << origin_lat*M_PI/180.0         ,origin_lat*M_PI/180.0 , 0 ;
+			Vector3d xyz_gps; llhSI2EnuSI(xyz_gps, llh, llh0);
+
+			home_Pos.x = xyz_gps(0);
+			home_Pos.y = xyz_gps(1);
 		}
 
 		//advertise service
@@ -461,7 +458,7 @@ public:
 
 		//subscribe to vehicle state
 		std::string odm_name;
-		if (!nh_.getParam("/c2_params/odometry_topic_name",odm_name)) odm_name = "/odometry/filtered";
+		if (!nh_.getParam("/global_params/odometry_topic_name",odm_name)) odm_name = "/odometry/filtered";
 		odom_est_sub = nh_.subscribe(odm_name,1, &C2::Captain::vehicleOdom,this);
 
 		//initialize and declare all the MBHV planners.

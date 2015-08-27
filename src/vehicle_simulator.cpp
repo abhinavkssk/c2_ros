@@ -1,6 +1,5 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
-#include <geodesy/utm.h>
 #include <tf/transform_broadcaster.h>
 #include <c2_ros/ActuatorControl.h>
 #include <vector>
@@ -41,7 +40,7 @@ public:
 	VSim(ros::NodeHandle n):bearing(0),thrust(0),turn(0),depthSP(0),depth(0),time(ros::Time::now().toSec()),nh_(n)
 {
 		std::string odm_name;
-		if (!nh_.getParam("/c2_params/odometry_topic_name",odm_name)) odm_name = "/odometry/filtered";
+		if (!nh_.getParam("/global_params/odometry_topic_name",odm_name)) odm_name = "/odometry/filtered";
 		odo_pub = nh_.advertise<nav_msgs::Odometry>(odm_name,1);
 
 		ac_sun = nh_.subscribe("/c2_ros/actuator_control",1,&C2::VSim::actuatorControl,this);
@@ -68,15 +67,6 @@ public:
 	{
 		if (!nh_.getParam("/c2_params/startX",xPos)) xPos = 0;
 		if (!nh_.getParam("/c2_params/startY",yPos)) yPos = 0;
-		double lat,lon;
-		if (nh_.getParam("/c2_params/startX_lat",lat) &&
-				nh_.getParam("/c2_params/startY_lon",lon))
-		{
-			geodesy::UTMPoint utmp;
-			geodesy::fromMsg(geodesy::toMsg(lat,lon),utmp);
-			xPos = utmp.easting;
-			yPos = utmp.northing;
-		}
 
 		if (!nh_.getParam("/c2_params/turnRate",turnRate)) turnRate = 10;
 		if (!nh_.getParam("/c2_params/thrustScale",thrustScale)) thrustScale = 1;
