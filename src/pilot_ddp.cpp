@@ -30,7 +30,7 @@
 #include <stdio.h>
 
 
-#define MAX_SPEED 5
+//#define MAX_SPEED 5
 using namespace std;
 using namespace Eigen;
 using namespace gcop;
@@ -40,8 +40,8 @@ typedef Matrix< double , 6 , 1> Vector6d;
   Body2dState x0,xf;
 
   VectorXd Q(6), Qf(6),R(2);
-
-	int iters=100;
+double MAX_SPEED=5;
+	int iters=10;
 	int N = 64;
 	double MU=0.01;
 	float eeps=1e-3;
@@ -114,6 +114,7 @@ void paramreqcallback(c2_ros::DDPInterfaceConfig &config, uint32_t level)
 	MU=config.mu;
 	eeps=pow(10,config.eps);
 	thrust_offset=config.thrust_offset;
+	MAX_SPEED=config.max_speed;
 }
 
 void pubtraj(vector<pair<Matrix3d, Vector3d> > xss,vector<Vector2d> uss,Body2dState xfs,vector<double> tss) //N is the number of segments
@@ -194,7 +195,8 @@ geometry_msgs::Pose2D StatetoPose2D(const Body2dState x)
 	void odom_x_est(const nav_msgs::Odometry::ConstPtr& odom_pos_est)
 {
 	poseTwistToState(x0,odom_pos_est->pose.pose,odom_pos_est->twist.twist);
-		//curPos.x = odom_pos_est->pose.pose.position.x;
+	//cout<<" REcieved Odom Information \n \n";	
+	//curPos.x = odom_pos_est->pose.pose.position.x;
 		//curPos.y = odom_pos_est->pose.pose.position.y;
 		//curPos.theta = tf::getYaw(odom_pos_est->pose.pose.orientation);
 
@@ -259,9 +261,9 @@ public:
 {
 	 actuator_controls_pub = nh.advertise<mavros::ActuatorControl>("/mavros/actuator_control", 1000);
 		
-	std::string odm_name;
-		if (!nh_.getParam("/global_params/odometry_topic_name",odm_name)) odm_name = "/insekf/pose";
-		odom_est_sub = nh.subscribe(odm_name,1000, odom_x_est);
+//	std::string odm_name;
+//		if (!nh.getParam("/global_params/odometry_topic_name",odm_name)) odm_name = "/insekf/pose";
+		odom_est_sub = nh.subscribe( "/insekf/pose",1000, odom_x_est);
 
 
 
@@ -353,7 +355,8 @@ public:
 
 	void tick()
 	{
-		if(!isCompleted)
+	std::cout<<"\n \n TICKING \n\n";	
+	if(!isCompleted)
 		{
 			if(isReinitialized)
 			{
@@ -458,6 +461,7 @@ public:
 
 	bool navigateTo(c2_ros::State3D mp)
 	{
+std::cout<<"\n \n NAVIGATIN \n\n";
 		//simulate succeed
 			double dist = asco::Utils::getDist2D(StatetoPose2D(x0), mp.pose);
 			

@@ -9,7 +9,6 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
-
 #include "c2_ros/mission.h"
 #include "c2_ros/C2_BHV.h"
 #include "c2_ros/BHVProposer.h"
@@ -34,6 +33,23 @@ using C2::C2_STATE;
 
 #define DEFAULT_SPEED 1
 #define DEFAULT_MPT_RADIUS 5
+template<typename T>
+void xml2Mat(T &mat, XmlRpc::XmlRpcValue &my_list)
+{
+  assert(my_list.getType() == XmlRpc::XmlRpcValue::TypeArray);
+  assert(my_list.size() > 0);
+  assert(mat.size()==my_list.size());
+
+  for (int i = 0; i < mat.rows(); i++)
+  {
+    for(int j=0; j<mat.cols();j++)
+    {
+      int k = j+ i*mat.cols();
+      assert(my_list[k].getType() == XmlRpc::XmlRpcValue::TypeDouble);
+      mat(i,j) =  (double)(my_list[k]);
+    }
+  }
+}
 
 namespace C2 {
 
@@ -135,9 +151,12 @@ private:
 			}
 
 			Vector3d llh;     llh  << lat*M_PI/180.0,lon*M_PI/180.0, 0 ;
-			Vector3d llh0;    llh0 << origin_lat*M_PI/180.0         ,origin_lat*M_PI/180.0 , 0 ;
+			Vector3d llh0;    llh0 << origin_lat*M_PI/180.0         ,origin_lon*M_PI/180.0 , 0 ;
 			Vector3d xyz_gps; llhSI2EnuSI(xyz_gps, llh, llh0);
+			
+			ROS_INFO("lat=%f, lon=%f, oLat=%f, oLon=%f, x=%f, y=%f",lat,lon,origin_lat,origin_lon,xyz_gps(0),xyz_gps(1));
 
+		
 			ml.m_state.pose.position.x = xyz_gps(0);
 			ml.m_state.pose.position.y = xyz_gps(1);
 			//TODO APM mission planner not allow desired speed, hack away !!!
@@ -424,15 +443,25 @@ public:
 		nh_(nh),
 		m_leg_cnt(0),
 		curMissionLeg(nullptr),
-		isCurMLCompleted(true){
+		isCurMLCompleted(true),
+		origin_lat(0),
+		origin_lon(0){
 
 		//get the origin of the operation area
-		if (!nh_.getParam("/global_params/map0",origin_lat) ||
+		/*if (!nh_.getParam("/global_params/map0",origin_lat) ||
 				!nh_.getParam("/global_params/map0",origin_lon))
 		{
 			ROS_WARN("Origin of the map not set ! ");
-		}
+		}*/
 
+		  XmlRpc::XmlRpcValue mat_xml;
+		  nh_.getParam("/global_params/map0",mat_xml);
+		Vector3d origin_vec;
+		xml2Mat(origin_vec,mat_xml);
+		origin_lat=origin_vec(0);
+		origin_lon=origin_vec(1);
+		
+		std::cout<<"\n Origin is " <<origin_lat<<","<<origin_lon<<"\n";
 		//retrieve the default value for speed and radius
 		if (!nh_.getParam("/c2_params/default_desired_speed",default_speed)) default_speed = DEFAULT_SPEED;
 		if (!nh_.getParam("/c2_params/default_m_pt_radius",default_mpt_radius)) default_mpt_radius = DEFAULT_MPT_RADIUS;
@@ -445,7 +474,7 @@ public:
 			home_lat=lat;
 			home_lon=lon;
 			Vector3d llh;     llh  << lat*M_PI/180.0,lon*M_PI/180.0, 0 ;
-			Vector3d llh0;    llh0 << origin_lat*M_PI/180.0         ,origin_lat*M_PI/180.0 , 0 ;
+			Vector3d llh0;    llh0 << origin_lat*M_PI/180.0         ,origin_lon*M_PI/180.0 , 0 ;
 			Vector3d xyz_gps; llhSI2EnuSI(xyz_gps, llh, llh0);
 
 			home_Pos.x = xyz_gps(0);
