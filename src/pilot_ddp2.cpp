@@ -219,11 +219,8 @@ private:
 	bool isCompleted;
 	bool isCurWayPtReached=false;
 	ros::Publisher actuator_controls_pub;
-	float sideDist = 20;
-	float secAngle = 10;
 
 public:
-
 
 	Pilot_Ddp2(int loopRate, ros::NodeHandle nh):
 		Pilot(loopRate,nh),
