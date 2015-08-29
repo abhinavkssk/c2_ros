@@ -165,6 +165,7 @@ add_executable(mbhv_abort_node src/mbhv_abort.cpp ${B_FILES})
 add_executable(mbhv_loiter_node src/mbhv_loiter.cpp ${B_FILES})
 add_executable(pilot_simulated_node src/pilot_simulated.cpp ${B_FILES})
 add_executable(pilot_ddp src/pilot_ddp.cpp ${B_FILES})
+add_executable(pilot_ddp2 src/pilot_ddp2.cpp ${B_FILES})
 add_executable(vehicle_simulator_node src/vehicle_simulator.cpp)
 
 ## Add cmake target dependencies of the executable/library
@@ -175,7 +176,8 @@ add_executable(vehicle_simulator_node src/vehicle_simulator.cpp)
  add_dependencies(mbhv_adaptivesampling_node c2_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
  add_dependencies(mbhv_loiter_node c2_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
  add_dependencies(pilot_simulated_node c2_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
-  add_dependencies(pilot_ddp ${PROJECT_NAME}_gencfg gcop_comm_generate_messages_cpp c2_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+ add_dependencies(pilot_ddp ${PROJECT_NAME}_gencfg gcop_comm_generate_messages_cpp c2_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+ add_dependencies(pilot_ddp2 ${PROJECT_NAME}_gencfg gcop_comm_generate_messages_cpp c2_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
  add_dependencies(vehicle_simulator_node c2_ros_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
@@ -187,6 +189,12 @@ target_link_libraries(mbhv_abort_node ${catkin_LIBRARIES})
 target_link_libraries(mbhv_loiter_node ${catkin_LIBRARIES})
 target_link_libraries(pilot_simulated_node ${catkin_LIBRARIES})
 target_link_libraries(pilot_ddp 		     ${GCOP_LIBRARIES}
+		      ${OpenCV_LIBRARIES}
+	      ${TINYXML_LIBRARIES}
+	      ${catkin_LIBRARIES}
+	       ${mavros_LIBRARIES} 
+	       )
+target_link_libraries(pilot_ddp2 		     ${GCOP_LIBRARIES}
 		      ${OpenCV_LIBRARIES}
 	      ${TINYXML_LIBRARIES}
 	      ${catkin_LIBRARIES}
