@@ -13,10 +13,12 @@
 	</include>
 
 	<!-- ddp_controller -->
-	<!--include file="$(find differential_control_usv)/launch/usv.launch"-->
+	<include file="$(find c2_pilot_ddp)/launch/ddp.launch">
+		<arg name="global_yaml" value="$(arg global_yaml)" />
+	</include>
 
-        <!-- mavros -->
-        <include file="$(find mavros)/launch/px4.launch"/>
+    <!-- mavros -->
+    <include file="$(find mavros)/launch/px4.launch"/>
 
 
 </launch>

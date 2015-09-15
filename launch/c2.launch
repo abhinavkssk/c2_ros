@@ -8,7 +8,6 @@
   <rosparam param="c2_params" command="load" file="$(find c2_ros)/config/c2_params.yaml" />  
 	<rosparam param="global_params" command="load" file="$(arg global_yaml)" /> 
 
-  <node name="pilot_ddp" pkg="c2_ros" type="pilot_ddp" output="screen" clear_params="true" required="true" />  
   <node name="mbhv_abort_node" pkg="c2_ros" type="mbhv_abort_node" output="screen" clear_params="true" required="true" />  
   <node name="mbhv_adaptivesampling_node" pkg="c2_ros" type="mbhv_adaptivesampling_node" output="screen" clear_params="true" required="true" />  
   <node name="mbhv_lawnmow_node" pkg="c2_ros" type="mbhv_lawnmow_node" output="screen" clear_params="true" required="true" />  

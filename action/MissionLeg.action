@@ -1,5 +1,5 @@
 #goal
-MissionLeg m_leg
+c2_ros_msgs/MissionLeg m_leg
 
 ---
 

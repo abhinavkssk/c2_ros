@@ -12,7 +12,7 @@ class MBHV_LawnMow: public Planner
 {
 private:
 	ros::Subscriber odom_est_sub;
-	c2_ros::MissionLeg ml;
+	c2_ros_msgs::MissionLeg ml;
 	geometry_msgs::Pose2D curPos;
 	double curBearing;
 	double xLength, yLength, moweWidth, moweBearing;
@@ -27,7 +27,7 @@ public:
 		yLength(20.0),
 		moweWidth(10.0),
 		moweBearing(0.0){
-		registerCapableBHV(c2_ros::C2_BHV::LAWNMOW);
+		registerCapableBHV(c2_ros_msgs::C2_BHV::LAWNMOW);
 
 		//subscribe to vehicle state
 		std::string odm_name;
@@ -88,17 +88,17 @@ public:
 		isMLCompleted = false;
 	}
 
-	c2_ros::Trajectory generateLMPath(){
+	c2_ros_msgs::Trajectory generateLMPath(){
 
-		c2_ros::Trajectory p_path;
-		c2_ros::Trajectory intercept1;
-		c2_ros::Trajectory intercept2;
+		c2_ros_msgs::Trajectory p_path;
+		c2_ros_msgs::Trajectory intercept1;
+		c2_ros_msgs::Trajectory intercept2;
 
 		//4 points for the 4 corners of the mow area.
 		//for the moment, dive at the same altitude specfied in the mission file
 		float halfXLength = xLength/2.0;
 		float halfYLength = yLength/2.0;
-		c2_ros::State3D TL,TR,BL,BR;
+		c2_ros_msgs::State3D TL,TR,BL,BR;
 		//copy radius and linear speed from the misison leg
 		TL.m_pt_radius = ml.m_pt_radius;
 		TR.m_pt_radius = ml.m_pt_radius;
@@ -134,7 +134,7 @@ public:
 			//start the loop
 			while(dy>BR.pose.position.y)
 			{
-				c2_ros::State3D tmp = TL;
+				c2_ros_msgs::State3D tmp = TL;
 				tmp.pose.position.y = dy;
 				intercept1.trajectory.push_back(tmp); // left
 				tmp = TR;
@@ -186,7 +186,7 @@ public:
 			//start the loop
 			while(dx<TR.pose.position.x)
 			{
-				c2_ros::State3D tmp = TL;
+				c2_ros_msgs::State3D tmp = TL;
 				tmp.pose.position.x = dx;
 				intercept1.trajectory.push_back(tmp); // top
 				tmp.pose.position.y = BL.pose.position.y;
@@ -231,7 +231,7 @@ public:
 			moweBearing = moweBearing*M_PI/180.0;
 
 			int wpcnt = p_path.trajectory.size();
-			c2_ros::State3D ps;
+			c2_ros_msgs::State3D ps;
 			float x=0.0;
 			float y=0.0;
 			for(int i=0;i<wpcnt;i++)

@@ -8,8 +8,8 @@
 #include <actionlib/client/simple_action_client.h>
 #include <c2_ros/MissionLegAction.h>
 #include <c2_ros/MissionPointAction.h>
-#include <c2_ros/MissionLeg.h>
-#include <c2_ros/C2_BHV.h>
+#include <c2_ros_msgs/MissionLeg.h>
+#include <c2_ros_msgs/C2_BHV.h>
 
 namespace C2 {
 
@@ -17,16 +17,16 @@ namespace C2 {
 class Planner{
 
 private:
-	c2_ros::MissionLeg m_leg;
+	c2_ros_msgs::MissionLeg m_leg;
 	bool mpointCompleted;
 	bool toTick;
 	int mp_progressPercentage;
-	std::vector<c2_ros::C2_BHV::_bhv_type> capable_bhv;
+	std::vector<c2_ros_msgs::C2_BHV::_bhv_type> capable_bhv;
 
 	ros::Rate loop_rate;
 	ros::Subscriber bhv_request_sub;
 	ros::Publisher bhv_propose_pub;
-	void bhv_request_callback(const c2_ros::C2_BHV::ConstPtr& bhv_request);
+	void bhv_request_callback(const c2_ros_msgs::C2_BHV::ConstPtr& bhv_request);
 
 	actionlib::SimpleActionServer<c2_ros::MissionLegAction> as_;
 	void goal_callback();
@@ -50,16 +50,16 @@ protected:
 	virtual void onMPointFailure() = 0;
 
 	//server for Captain
-	c2_ros::MissionLeg getMissionLeg();
+	c2_ros_msgs::MissionLeg getMissionLeg();
 	void setMLCompleted(bool isSucceeded);
 	void sendMLProgress(int percentage_completed);
 	bool isMPointCompleted();
 	int getMPProgress();
-	void registerCapableBHV(c2_ros::C2_BHV::_bhv_type bhv);
+	void registerCapableBHV(c2_ros_msgs::C2_BHV::_bhv_type bhv);
 
 	//client for pilot
-	void sendMPoint(const c2_ros::State3D& state3D, bool isOverwrite = true);
-	void sendMPoint(const c2_ros::Trajectory& traj, bool isOverwrite = true);
+	void sendMPoint(const c2_ros_msgs::State3D& state3D, bool isOverwrite = true);
+	void sendMPoint(const c2_ros_msgs::Trajectory& traj, bool isOverwrite = true);
 
 public:
 	Planner(std::string name, int loopRate, ros::NodeHandle nh);

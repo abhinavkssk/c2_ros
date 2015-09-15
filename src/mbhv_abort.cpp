@@ -8,7 +8,7 @@ namespace C2 {
 class MBHV_Abort: public Planner
 {
 private:
-	c2_ros::MissionLeg ml;
+	c2_ros_msgs::MissionLeg ml;
 	bool isMLCompleted;
 
 public:
@@ -16,7 +16,7 @@ public:
 		Planner(name,loopRate,nh),
 		isMLCompleted(false)
 {
-		registerCapableBHV(c2_ros::C2_BHV::ABORT);
+		registerCapableBHV(c2_ros_msgs::C2_BHV::ABORT);
 }
 
 	~MBHV_Abort(){
@@ -40,7 +40,7 @@ public:
 				if(ml.m_state.twist.linear.x != 0.0)
 				{
 					ROS_INFO("[%s]:sending abort position to pilot",agentName.c_str());
-					c2_ros::State3D p;
+					c2_ros_msgs::State3D p;
 					p.pose = ml.m_state.pose;
 					p.twist = ml.m_state.twist;
 					p.m_pt_radius = ml.m_pt_radius;

@@ -6,9 +6,9 @@
 #include <actionlib/client/simple_action_client.h>
 #include <c2_ros/MissionLegAction.h>
 #include <c2_ros/MissionPointAction.h>
-#include <c2_ros/MissionLeg.h>
+#include <c2_ros_msgs/MissionLeg.h>
 #include <c2_ros/c2_agent.h>
-#include <c2_ros/BHVProposer.h>
+#include <c2_ros_msgs/BHVProposer.h>
 
 using C2::Planner;
 
@@ -36,18 +36,18 @@ Planner::Planner(std::string name, int loopRate, ros::NodeHandle nh):
 
 	//sub and pub bhv
 	bhv_request_sub = nh_.subscribe("/captain/bhv_request",100, &Planner::bhv_request_callback,this);
-	bhv_propose_pub = nh_.advertise<c2_ros::BHVProposer>("/captain/bhv_propose",100);
+	bhv_propose_pub = nh_.advertise<c2_ros_msgs::BHVProposer>("/captain/bhv_propose",100);
 }
 
-void Planner::bhv_request_callback(const c2_ros::C2_BHV::ConstPtr& bhv_request)
+void Planner::bhv_request_callback(const c2_ros_msgs::C2_BHV::ConstPtr& bhv_request)
 {
-	std::vector<c2_ros::C2_BHV::_bhv_type>::iterator it;
+	std::vector<c2_ros_msgs::C2_BHV::_bhv_type>::iterator it;
 
 	it = find (capable_bhv.begin(), capable_bhv.end(), bhv_request->bhv);
 	if (it != capable_bhv.end())
 	{
 		//publish to let Captain know
-		c2_ros::BHVProposer p;
+		c2_ros_msgs::BHVProposer p;
 		p.name = agentName;
 		bhv_propose_pub.publish(p);
 	}
@@ -66,7 +66,7 @@ void Planner::spin(){
 	ros::shutdown();
 }
 
-void Planner::sendMPoint(const c2_ros::State3D& state3D, bool isOverwrite)
+void Planner::sendMPoint(const c2_ros_msgs::State3D& state3D, bool isOverwrite)
 {
 	c2_ros::MissionPointGoal goal;
 	goal.mission_traj.trajectory.push_back(state3D);
@@ -80,11 +80,11 @@ void Planner::sendMPoint(const c2_ros::State3D& state3D, bool isOverwrite)
 	mp_progressPercentage = 0;
 }
 
-void Planner::sendMPoint(const c2_ros::Trajectory& traj, bool isOverwrite)
+void Planner::sendMPoint(const c2_ros_msgs::Trajectory& traj, bool isOverwrite)
 {
 	c2_ros::MissionPointGoal goal;
 	goal.isOverwrite = isOverwrite;
-	c2_ros::Trajectory::_trajectory_type::const_iterator it;
+	c2_ros_msgs::Trajectory::_trajectory_type::const_iterator it;
 	for (it=traj.trajectory.begin(); it != traj.trajectory.end();it++){
 		goal.mission_traj.trajectory.push_back(*it);
 	}
@@ -123,7 +123,7 @@ void Planner::setMLCompleted(bool isSucceeded)
 
 bool Planner::isMPointCompleted(){return mpointCompleted;}
 
-c2_ros::MissionLeg Planner::getMissionLeg(){return m_leg;}
+c2_ros_msgs::MissionLeg Planner::getMissionLeg(){return m_leg;}
 
 int Planner::getMPProgress(){return mp_progressPercentage;}
 
@@ -153,7 +153,7 @@ void Planner::preempt_callback()
 
 	//reset the attributes
 	toTick = false;
-	m_leg = c2_ros::MissionLeg();
+	m_leg = c2_ros_msgs::MissionLeg();
 
 	//reply the Captain
 	as_.setPreempted();
@@ -194,7 +194,7 @@ void Planner::sendMLProgress(int percentage_completed)
 	as_.publishFeedback(feedback);
 }
 
-void Planner::registerCapableBHV(c2_ros::C2_BHV::_bhv_type bhv)
+void Planner::registerCapableBHV(c2_ros_msgs::C2_BHV::_bhv_type bhv)
 {
 	capable_bhv.push_back(bhv);
 }

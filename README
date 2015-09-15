@@ -1,1 +1,3 @@
 an implementation of ROS command and control system
+
+Please check CMakeLists.txt to find out the package's dependencies ! 

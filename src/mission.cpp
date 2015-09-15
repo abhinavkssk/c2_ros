@@ -5,7 +5,7 @@ using C2::Mission;
 Mission::Mission(){}
 Mission::~Mission(void){}
 
-void Mission::add(c2_ros::MissionLeg ml)
+void Mission::add(c2_ros_msgs::MissionLeg ml)
 {
 	m_legs.push_back(ml);
 }
@@ -20,7 +20,7 @@ void Mission::clear()
 	m_legs.clear();
 }
 
-const c2_ros::MissionLeg *Mission::get(int num)
+const c2_ros_msgs::MissionLeg *Mission::get(int num)
 {
 	if (num >=0 && num < m_legs.size())
 		return &m_legs[num];

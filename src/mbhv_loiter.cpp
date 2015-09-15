@@ -14,7 +14,7 @@ class MBHV_Loiter: public Planner
 {
 private:
 	ros::Subscriber odom_est_sub;
-	c2_ros::MissionLeg ml;
+	c2_ros_msgs::MissionLeg ml;
 	geometry_msgs::Pose2D curPos;
 	double curBearing;
 
@@ -22,7 +22,7 @@ public:
 	MBHV_Loiter(std::string name, int loopRate, ros::NodeHandle nh):
 		Planner(name,loopRate,nh),
 		curBearing(0){
-		registerCapableBHV(c2_ros::C2_BHV::LOITER);
+		registerCapableBHV(c2_ros_msgs::C2_BHV::LOITER);
 
 		//subscribe to vehicle state
 		std::string odm_name;
@@ -52,7 +52,7 @@ public:
 			//check the distance between curMissionLeg pos and curPos
 			if(asco::Utils::getDist2D(curPos,ml.m_state.pose) > 15)
 			{
-				c2_ros::State3D p;
+				c2_ros_msgs::State3D p;
 				p.pose = ml.m_state.pose;
 				p.twist = ml.m_state.twist;
 				p.m_pt_radius = ml.m_pt_radius;

@@ -9,7 +9,7 @@ namespace C2 {
 class MBHV_WayPoint: public Planner
 {
 private:
-	c2_ros::MissionLeg ml;
+	c2_ros_msgs::MissionLeg ml;
 	bool isMLCompleted;
 
 public:
@@ -17,7 +17,7 @@ public:
 		Planner(name,loopRate,nh),
 		isMLCompleted(false)
 {
-		registerCapableBHV(c2_ros::C2_BHV::WAY_POINT);
+		registerCapableBHV(c2_ros_msgs::C2_BHV::WAY_POINT);
 }
 
 	~MBHV_WayPoint(){
@@ -40,7 +40,7 @@ public:
 			else
 			{
 				ROS_INFO("sending MPoints");
-				c2_ros::State3D p;
+				c2_ros_msgs::State3D p;
 				p.pose = ml.m_state.pose;
 				p.twist = ml.m_state.twist;
 				p.m_pt_radius = ml.m_pt_radius;

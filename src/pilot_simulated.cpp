@@ -4,9 +4,9 @@
 #include <tf/transform_datatypes.h>
 #include <c2_ros/pilot.h>
 #include <c2_ros/c2_agent.h>
-#include <c2_ros/ActuatorControl.h>
-#include <c2_ros/Trajectory.h>
-#include <c2_ros/State3D.h>
+#include <c2_ros_msgs/ActuatorControl.h>
+#include <c2_ros_msgs/Trajectory.h>
+#include <c2_ros_msgs/State3D.h>
 #include <asco_utils/utils.h>
 #include <vector>
 #include <math.h>
@@ -18,8 +18,8 @@ class Pilot_Simulated: public Pilot
 private:
 	ros::Subscriber odom_est_sub;
 	ros::Publisher ac_pub;
-	c2_ros::Trajectory poseToRun;
-	c2_ros::State3D curMP;
+	c2_ros_msgs::Trajectory poseToRun;
+	c2_ros_msgs::State3D curMP;
 	geometry_msgs::Pose2D curPos;
 
 
@@ -56,7 +56,7 @@ public:
 		if (!nh_.getParam("/global_params/odometry_topic_name",odm_name)) odm_name = "/odometry/filtered";
 		odom_est_sub = nh_.subscribe(odm_name,1, &C2::Pilot_Simulated::odom_x_est,this);
 
-		ac_pub = nh_.advertise<c2_ros::ActuatorControl>("/c2_ros/actuator_control",1);
+		ac_pub = nh_.advertise<c2_ros_msgs::ActuatorControl>("/c2_ros/actuator_control",1);
 	}
 
 	~Pilot_Simulated()
@@ -106,12 +106,12 @@ public:
 
 	void stopVehicle()
 	{
-		c2_ros::ActuatorControl ac;
+		c2_ros_msgs::ActuatorControl ac;
 		ac.desired_speed = 0;
 		ac_pub.publish(ac);
 	}
 
-	bool navigateTo(c2_ros::State3D mp)
+	bool navigateTo(c2_ros_msgs::State3D mp)
 	{
 		double dist = asco::Utils::getDist2D(curPos, mp.pose);
 		if(dist > mp.m_pt_radius){
@@ -138,7 +138,7 @@ public:
 			}
 
 			//send actuator control
-			c2_ros::ActuatorControl ac;
+			c2_ros_msgs::ActuatorControl ac;
 			ac.desired_speed = speedSP;
 			ac.desired_bearing = bearingSP;
 			ac_pub.publish(ac);
@@ -185,12 +185,12 @@ public:
 		stopVehicle();
 	}
 
-	void newMissionPointAvailable(c2_ros::Trajectory traj, bool isOverwrite)
+	void newMissionPointAvailable(c2_ros_msgs::Trajectory traj, bool isOverwrite)
 	{
 		ROS_INFO("Mission point received by [%s]",agentName.c_str());
 		if(isCompleted)
 		{
-			poseToRun.trajectory = c2_ros::Trajectory::_trajectory_type(traj.trajectory);
+			poseToRun.trajectory = c2_ros_msgs::Trajectory::_trajectory_type(traj.trajectory);
 			isCompleted = false;
 			isCurMPReached = true;
 			poseCnt = 0;
@@ -199,13 +199,13 @@ public:
 		{
 			if(isOverwrite)
 			{
-				poseToRun.trajectory = c2_ros::Trajectory::_trajectory_type(traj.trajectory);
+				poseToRun.trajectory = c2_ros_msgs::Trajectory::_trajectory_type(traj.trajectory);
 				isReinitialized = true;
 				poseCnt = 0;
 			}
 			else
 			{
-				c2_ros::Trajectory::_trajectory_type::iterator it;
+				c2_ros_msgs::Trajectory::_trajectory_type::iterator it;
 				for(it = traj.trajectory.begin(); it != traj.trajectory.end(); it++){
 					poseToRun.trajectory.push_back(*it);
 				}

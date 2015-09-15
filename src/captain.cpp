@@ -10,15 +10,15 @@
 #include <string>
 #include <unordered_map>
 #include "c2_ros/mission.h"
-#include "c2_ros/C2_BHV.h"
-#include "c2_ros/BHVProposer.h"
+#include "c2_ros_msgs/C2_BHV.h"
+#include "c2_ros_msgs/BHVProposer.h"
 #include "c2_ros/C2_CMD.h"
 #include "c2_ros/c2_state.h"
-#include "c2_ros/MissionLeg.h"
+#include "c2_ros_msgs/MissionLeg.h"
 #include <c2_ros/c2_agent.h>
 #include <c2_ros/planner_map.h>
-#include <c2_ros/State3D.h>
-#include <c2_ros/Trajectory.h>
+#include <c2_ros_msgs/State3D.h>
+#include <c2_ros_msgs/Trajectory.h>
 #include <asco_utils/utils.h>
 
 #include <actionlib/client/simple_action_client.h>
@@ -27,7 +27,7 @@
 #include <c2_ros/llh_enu_cov.h>
 #include <enu/enu.h>
 
-c2_ros::C2_BHV bhv;
+c2_ros_msgs::C2_BHV bhv;
 
 using C2::C2_STATE;
 
@@ -75,7 +75,7 @@ private:
 	geometry_msgs::Pose2D curPos;
 	geometry_msgs::Pose2D m_startPos;
 	geometry_msgs::Pose2D home_Pos;
-	const c2_ros::MissionLeg* curMissionLeg;
+	const c2_ros_msgs::MissionLeg* curMissionLeg;
 	C2_STATE myState;
 	c2_ros::C2_CMD receivedCmd;
 	int m_leg_cnt;
@@ -119,7 +119,7 @@ private:
 			if (cnt < 11) continue; // must be 12 columns
 
 			cnt = 1;
-			c2_ros::MissionLeg ml;
+			c2_ros_msgs::MissionLeg ml;
 			std::istringstream is(line);
 			while (std::getline(is, token, '\t')){
 				if(cnt == 4){//command type
@@ -228,10 +228,10 @@ private:
 		return true;
 	}
 
-	void requestForProposal(c2_ros::C2_BHV bhv)
+	void requestForProposal(c2_ros_msgs::C2_BHV bhv)
 	{
 		ROS_INFO("[%s]:Requesting for Planner to handle behavior_type:[%d]",agentName.c_str(),bhv.bhv);
-		c2_ros::C2_BHV b;
+		c2_ros_msgs::C2_BHV b;
 		b.bhv = bhv.bhv;
 		bhv_request_pub.publish(b);
 		//ros::Duration(1).sleep();
@@ -298,8 +298,8 @@ public:
 			activePlanner = C2::C2Agent(C2::C2Agent::MBHV_ABORTER).toString();
 
 			//determine which abort mode
-			c2_ros::MissionLeg abort_ml;
-			abort_ml.m_bhv.bhv = c2_ros::C2_BHV::ABORT;
+			c2_ros_msgs::MissionLeg abort_ml;
+			abort_ml.m_bhv.bhv = c2_ros_msgs::C2_BHV::ABORT;
 			if(request.command == c2_ros::C2_CMD::Request::ABORT_TO_HOME)
 			{
 				abort_ml.m_state.pose.position.x = home_Pos.x;
@@ -395,7 +395,7 @@ public:
 		return true;
 	}
 
-	void sendGoal(const c2_ros::MissionLeg& ml){
+	void sendGoal(const c2_ros_msgs::MissionLeg& ml){
 
 		if(activePlanner.empty())
 		{
@@ -404,7 +404,7 @@ public:
 		}
 
 		c2_ros::MissionLegGoal goal;
-		goal.m_leg = c2_ros::MissionLeg(ml);
+		goal.m_leg = c2_ros_msgs::MissionLeg(ml);
 
 		if(ml.m_bhv.bhv == bhv.ABORT)
 		{
@@ -429,7 +429,7 @@ public:
 		curPos.theta = tf::getYaw(odom_pos_est->pose.pose.orientation);
 	}
 
-	void bhv_propose_callback(const c2_ros::BHVProposer::ConstPtr& bhv_proposer)
+	void bhv_propose_callback(const c2_ros_msgs::BHVProposer::ConstPtr& bhv_proposer)
 	{
 		//TODO future exansion to allow more than one active planner ?
 		//alway take the last one that reply, need to fix this when there is a need in the future
@@ -499,7 +499,7 @@ public:
 
 		//pub and sub to behavior request and proposal
 		bhv_propose_sub = nh_.subscribe("/captain/bhv_propose",100, &Captain::bhv_propose_callback,this);
-		bhv_request_pub = nh_.advertise<c2_ros::C2_BHV>("/captain/bhv_request",100);
+		bhv_request_pub = nh_.advertise<c2_ros_msgs::C2_BHV>("/captain/bhv_request",100);
 	}
 
 	~Captain(){

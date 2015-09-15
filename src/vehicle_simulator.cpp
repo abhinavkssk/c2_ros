@@ -1,7 +1,7 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_broadcaster.h>
-#include <c2_ros/ActuatorControl.h>
+#include <c2_ros_msgs/ActuatorControl.h>
 #include <vector>
 #include <math.h>
 
@@ -55,7 +55,7 @@ public:
 
 	}
 
-	void actuatorControl(const c2_ros::ActuatorControl::ConstPtr& ac)
+	void actuatorControl(const c2_ros_msgs::ActuatorControl::ConstPtr& ac)
 	{
 		ROS_DEBUG("Actuator Control received");
 		setThrust(speed2thrust(ac->desired_speed));

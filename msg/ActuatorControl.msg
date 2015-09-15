@@ -1,3 +1,0 @@
-float32 desired_bearing
-float32 desired_speed
-float32 desired_depth

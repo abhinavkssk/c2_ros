@@ -1,5 +1,5 @@
 #goal
-Trajectory mission_traj
+c2_ros_msgs/Trajectory mission_traj
 bool isOverwrite 							#overwrite the previous goal if true, otherwise, appended to the last goal
 ---
 
