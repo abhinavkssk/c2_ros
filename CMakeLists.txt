@@ -26,6 +26,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
+find_package(Eigen3 REQUIRED)
+find_library(SWIFTNAV swiftnav)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -110,6 +112,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+${EIGEN3_INCLUDE_DIR}
 )
 
 # get all *.cpp files recursively
@@ -137,13 +140,13 @@ add_executable(vehicle_simulator_node src/vehicle_simulator.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
- add_dependencies(captain_node c2_ros_msgs_gencpp ${catkin_EXPORTED_TARGETS})
- add_dependencies(mbhv_waypoint_node c2_ros_msgs_gencpp ${catkin_EXPORTED_TARGETS})
- add_dependencies(mbhv_lawnmow_node c2_ros_msgs_gencpp ${catkin_EXPORTED_TARGETS})
- add_dependencies(mbhv_adaptivesampling_node c2_ros_msgs_gencpp ${catkin_EXPORTED_TARGETS})
- add_dependencies(mbhv_loiter_node c2_ros_msgs_gencpp ${catkin_EXPORTED_TARGETS})
- add_dependencies(pilot_simulated_node c2_ros_msgs_gencpp ${catkin_EXPORTED_TARGETS})
- add_dependencies(vehicle_simulator_node c2_ros_msgs_gencpp ${catkin_EXPORTED_TARGETS})
+ add_dependencies(captain_node c2_ros_msgs_gencpp ${c2_ros_EXPORTED_TARGETS} c2_ros_gencpp )
+ add_dependencies(mbhv_waypoint_node c2_ros_msgs_gencpp ${c2_ros_EXPORTED_TARGETS} c2_ros_gencpp)
+ add_dependencies(mbhv_lawnmow_node c2_ros_msgs_gencpp ${c2_ros_EXPORTED_TARGETS} c2_ros_gencpp)
+ add_dependencies(mbhv_adaptivesampling_node c2_ros_msgs_gencpp ${c2_ros_EXPORTED_TARGETS} c2_ros_gencpp)
+ add_dependencies(mbhv_loiter_node c2_ros_msgs_gencpp ${c2_ros_EXPORTED_TARGETS} c2_ros_gencpp)
+ add_dependencies(pilot_simulated_node c2_ros_msgs_gencpp ${c2_ros_EXPORTED_TARGETS} c2_ros_gencpp )
+ add_dependencies(vehicle_simulator_node c2_ros_msgs_gencpp ${c2_ros_EXPORTED_TARGETS} c2_ros_gencpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(c2_ros ${catkin_LIBRARIES})
