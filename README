@@ -1,3 +1,5 @@
 an implementation of ROS command and control system
 
-Please check CMakeLists.txt to find out the package's dependencies ! 
+Please check CMakeLists.txt to find out the package's dependencies !
+
+TODO: Also move the actionlib files to c2_ros msgs
