@@ -8,7 +8,7 @@
 
 default_desired_speed   :  1,
 default_m_pt_radius     :  5,
-mission_file_location   :  /home/william/Missions/mission.txt,  
+mission_file_location   :  /home/odroid/Missions/mission.txt,  
 #home location, lat lon takes precedence
 home_lat      : 39.3265546541211108,
 home_lon      : -76.6221714019775391,
