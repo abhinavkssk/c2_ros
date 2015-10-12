@@ -38,7 +38,7 @@ public:
 		//obtain all the parameters for the LM planning.
 		if (!nh_.getParam("/c2_params/lm_xlength",xLength))
 		{
-			ROS_WARN("Please Specify the parameter for [%s]",agentName.c_str());
+			ROS_WARN("Please Specify the lawnmov parameter for [%s] in /c2_params",agentName.c_str());
 		}
 		nh_.getParam("/c2_params/lm_ylength",yLength);
 		nh_.getParam("/c2_params/lm_mowewidth",moweWidth);
@@ -74,7 +74,16 @@ public:
 			{
 				//only one set of points to send
 				isMLCompleted = true;
-				sendMPoint(generateLMPath());
+				ROS_INFO("[%s] lm params:x=%f y=%f xlength=%f ylength=%f mwidth=%f mbearing=%f",agentName.c_str(),
+						ml.m_state.pose.position.x,ml.m_state.pose.position.y,xLength,yLength,moweWidth,moweBearing);
+				c2_ros_msgs::Trajectory traj = generateLMPath();
+				//logging
+				for(int i=0;i<traj.trajectory.size();i++)
+				{
+					c2_ros_msgs::State3D pt = traj.trajectory.at(i);
+					ROS_INFO("[%s] lm | %f %f",agentName.c_str(),pt.pose.position.x,pt.pose.position.y);
+				}
+				sendMPoint(traj);
 			}
 		}
 	}
@@ -165,6 +174,7 @@ public:
 				{
 					p_path.trajectory.push_back(intercept1.trajectory.at(i));
 					p_path.trajectory.push_back(intercept1.trajectory.at(i+1));
+					ROS_DEBUG("x=%f y=%f",intercept1.trajectory.at(i).pose.position.x,intercept1.trajectory.at(i).pose.position.y);
 					isLeft = false;
 				}
 				else
@@ -172,6 +182,7 @@ public:
 
 					p_path.trajectory.push_back(intercept2.trajectory.at(i));
 					p_path.trajectory.push_back(intercept2.trajectory.at(i+1));
+					ROS_DEBUG("x=%f y=%f",intercept2.trajectory.at(i).pose.position.x,intercept2.trajectory.at(i).pose.position.y);
 					isLeft = true;
 				}
 			}
@@ -214,11 +225,13 @@ public:
 				if(isTop)
 				{
 					p_path.trajectory.push_back(intercept1.trajectory.at(i));
+					ROS_DEBUG("x=%f y=%f",intercept1.trajectory.at(i).pose.position.x,intercept1.trajectory.at(i).pose.position.y);
 					isTop = false;
 				}
 				else
 				{
 					p_path.trajectory.push_back(intercept2.trajectory.at(i));
+					ROS_DEBUG("x=%f y=%f",intercept2.trajectory.at(i).pose.position.x,intercept2.trajectory.at(i).pose.position.y);
 					isTop = true;
 				}
 			}
@@ -228,7 +241,7 @@ public:
 		// printf("moweBearing=%f\n",moweBearing)
 		if(moweBearing!=0)
 		{
-			moweBearing = moweBearing*M_PI/180.0;
+			float mb_rad = moweBearing*M_PI/180.0;
 
 			int wpcnt = p_path.trajectory.size();
 			c2_ros_msgs::State3D ps;
@@ -242,8 +255,8 @@ public:
 				float y1 = ps.pose.position.y-ml.m_state.pose.position.y;
 
 				//rotation
-				x = x1*cos(moweBearing)+y1*sin(moweBearing);
-				y = -x1*sin(moweBearing)+y1*cos(moweBearing);
+				x = x1*cos(mb_rad)+y1*sin(mb_rad);
+				y = -x1*sin(mb_rad)+y1*cos(mb_rad);
 
 				//transform back to center point
 				x1 = x + ml.m_state.pose.position.x;
@@ -251,7 +264,8 @@ public:
 
 				//put it back to the path
 				ps.pose.position.x = x1;
-				ps.pose.position.x = y1;
+				ps.pose.position.y = y1;
+				//std::cout<<x1<<" "<<y1<<std::endl;
 				p_path.trajectory[i] = ps;
 			}
 		}

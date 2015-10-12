@@ -1,12 +1,10 @@
 <launch>
-
-  <arg name="global_yaml" />
   
   <env name="ROSCONSOLE_CONFIG_FILE" 
        value="$(find c2_ros)/config/custom_rosconsole.conf"/>
 
   <rosparam param="c2_params" command="load" file="$(find c2_ros)/config/c2_params.yaml" />  
-
+  <rosparam param="global_params" command="load" file="$(find c2_ros)/config/global.yaml"  /> 
 
   <node name="pilot_simulated_node" pkg="c2_ros" type="pilot_simulated_node" output="screen" clear_params="true" required="true" />  
   <node name="mbhv_abort_node" pkg="c2_ros" type="mbhv_abort_node" output="screen" clear_params="true" required="true" />  

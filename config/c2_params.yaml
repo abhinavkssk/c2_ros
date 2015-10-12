@@ -8,7 +8,7 @@
 
 default_desired_speed   :  1,
 default_m_pt_radius     :  5,
-mission_file_location   :  /home/odroid/Missions/mission.txt,  
+mission_file_location   :  /home/william/Missions/mission.txt,  
 #home location, lat lon takes precedence
 home_lat      : 39.3265546541211108,
 home_lon      : -76.6221714019775391,
@@ -28,5 +28,16 @@ currentSpeed    : 0, #meter per second
 currentYaw      : 0, #radian
 
 startX          : 0,
-startY          : 0
+startY          : 0,
+
+
+######## Params for lawnmow agent ##########
+lm_xlength      : 50,         #meters
+lm_ylength      : 50,         #meters
+lm_mowewidth    : 20,         #meters
+lm_mowebearing  : 20           #deg
+
+
+
+
 }

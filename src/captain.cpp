@@ -129,6 +129,8 @@ private:
 						ml.m_bhv.bhv = bhv.WAY_POINT;
 					else if(bhv_num == 17)
 						ml.m_bhv.bhv = bhv.ADAPTIVE_SAMPLING;
+					else if(bhv_num == 18)
+						ml.m_bhv.bhv = bhv.LAWNMOW;
 					//TODO fill in the rest !
 				}
 				else if (cnt == 6){ // mission_pt_radius
