@@ -6,7 +6,7 @@
 map0:[39.3278946 , -76.6202873 , 0.0],
 
 ################# Odometry topic #####################
-odometry_topic_name     : /insekf_pose,
+odometry_topic_name     : /insekf/pose,
 
 ################# Filter frequency #####################
 hz_odom:  20.0  # Freq at which odometric data is published

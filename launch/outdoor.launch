@@ -7,6 +7,11 @@
 		<arg name="global_yaml" value="$(arg global_yaml)" />
 	</include>
 
+	<!-- c2_signaling_Officer_lcm -->
+	<include file="$(find c2_sigofficer_lcm)/launch/vehicle.launch">
+		<arg name="global_yaml" value="$(arg global_yaml)" />
+	</include>
+
 	<!-- insekf -->
 	<include file="$(find gcop_ros_est)/launch/insekf_mavros.launch">
 		<arg name="global_yaml" value="$(arg global_yaml)" />
@@ -16,6 +21,9 @@
 	<include file="$(find c2_pilot_ddp)/launch/ddp.launch">
 		<arg name="global_yaml" value="$(arg global_yaml)" />
 	</include>
+	
+	 <!-- mavros -->
+      	<include file="$(find mavros)/launch/px4.launch"/>
 
 
 </launch>
