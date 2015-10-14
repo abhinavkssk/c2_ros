@@ -16,6 +16,8 @@ class MBHV_AdaptiveSampling: public Planner
 private:
 	c2_ros_msgs::MissionLeg ml;
 	bool isBHVStopped;
+	double default_speed;
+	double default_mpt_radius;
 
 	ros::Subscriber adp_path_sub;
 	ros::Publisher adp_start_pub;
@@ -28,6 +30,9 @@ public:
 		Planner(name,loopRate,nh),
 		isBHVStopped(false){
 		registerCapableBHV(c2_ros_msgs::C2_BHV::ADAPTIVE_SAMPLING);
+
+		if (!nh_.getParam("/c2_params/default_desired_speed",default_speed)) default_speed = 1.0;
+		if (!nh_.getParam("/c2_params/default_m_pt_radius",default_mpt_radius)) default_mpt_radius = 5.0;
 
 		adp_path_sub = nh_.subscribe("/adp_path",10, &C2::MBHV_AdaptiveSampling::ADPPath_callback,this);
 		adp_start_pub = nh_.advertise<std_msgs::Bool>("/adp_start",100);
@@ -76,6 +81,7 @@ public:
 
 	void ADPPath_callback(const nav_msgs::Path adpPath)
 	{
+		ROS_INFO("ADP path received by [%s]",agentName.c_str());
 		//this check is needed in case matlab node is misbehaving
 		if(!isBHVStopped){
 			//rviz
@@ -97,9 +103,11 @@ public:
 			for (it=adpPath.poses.begin(); it != adpPath.poses.end();it++){
 				c2_ros_msgs::State3D p;
 				p.pose = it->pose;
-				p.twist.linear.x = 2;
-				p.m_pt_radius = 0.5;
+				p.twist.linear.x = default_speed;
+				p.m_pt_radius = default_mpt_radius;
 				traj.trajectory.push_back(p);
+				ROS_INFO("[%s]: adp m_points| x=%f y=%f spd=%f wp_radius=%f",
+						agentName.c_str(),p.pose.position.x,p.pose.position.y,p.twist.linear.x,p.m_pt_radius);
 
 				//rviz
 				geometry_msgs::Point point;
