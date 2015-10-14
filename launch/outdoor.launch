@@ -9,7 +9,7 @@
 
 	<!-- c2_signaling_Officer_lcm -->
 	<include file="$(find c2_sigofficer_lcm)/launch/vehicle.launch">
-		<arg name="global_yaml" value="$(arg global_yaml)" />
+<!--		<arg name="global_yaml" value="$(arg global_yaml)" />-->
 	</include>
 
 	<!-- insekf -->
