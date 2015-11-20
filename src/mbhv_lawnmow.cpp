@@ -81,7 +81,7 @@ public:
 				for(int i=0;i<traj.trajectory.size();i++)
 				{
 					c2_ros_msgs::State3D pt = traj.trajectory.at(i);
-					ROS_INFO("[%s] lm | %f %f",agentName.c_str(),pt.pose.position.x,pt.pose.position.y);
+					ROS_INFO("[%s] lm | %f %f %f %f %f",agentName.c_str(),pt.pose.position.x,pt.pose.position.y,pt.twist.linear.x,pt.twist.linear.y,pt.twist.angular.z);
 				}
 				sendMPoint(traj);
 			}
@@ -113,6 +113,12 @@ public:
 		TR.m_pt_radius = ml.m_pt_radius;
 		BL.m_pt_radius = ml.m_pt_radius;
 		BR.m_pt_radius = ml.m_pt_radius;
+                
+                //copy the default orientation
+		TL.pose.orientation = ml.m_state.pose.orientation;
+		TR.pose.orientation = ml.m_state.pose.orientation;
+		BL.pose.orientation = ml.m_state.pose.orientation;
+		BR.pose.orientation = ml.m_state.pose.orientation;
 
 		TL.twist = ml.m_state.twist;
 		TR.twist = ml.m_state.twist;
