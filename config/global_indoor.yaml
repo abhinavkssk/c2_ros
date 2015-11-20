@@ -12,7 +12,7 @@ odometry_topic_name     : /insekf/pose,
 AllowBack : false,
 
 ################# Being used with Alvar indoors? ######
-isIndoor : false,
+isIndoor : true,
 
 ################# Filter frequency #####################
 hz_odom:  20.0  # Freq at which odometric data is published

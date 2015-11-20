@@ -1,6 +1,6 @@
 <launch>
 
-	<arg name="global_yaml" value="$(find c2_ros)/config/global.yaml" />
+	<arg name="global_yaml" value="$(find c2_ros)/config/global_indoor.yaml" />
 
 	<!-- c2_ros -->
 	<include file="$(find c2_ros)/launch/c2.launch">
