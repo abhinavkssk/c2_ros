@@ -7,11 +7,11 @@
 ######## Captain ##########
 
 default_desired_speed   :  1,
-default_m_pt_radius     :  1,
+default_m_pt_radius     :  3,
 mission_file_location   :  /home/odroid/Missions/mission.txt,  
 #home location, lat lon takes precedence
-home_lat      : 39.3265546541211108,
-home_lon      : -76.6221714019775391,
+home_lat      :  39.449768,
+home_lon      : -76.5519567,
 homeX          : 0,
 homeY          : 0,
 

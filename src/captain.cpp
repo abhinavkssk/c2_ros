@@ -155,7 +155,16 @@ private:
 			Vector3d llh;     llh  << lat*M_PI/180.0,lon*M_PI/180.0, 0 ;
 			Vector3d llh0;    llh0 << origin_lat*M_PI/180.0         ,origin_lon*M_PI/180.0 , 0 ;
 			Vector3d xyz_gps; llhSI2EnuSI(xyz_gps, llh, llh0);
-			
+			bool isIndoor=false; 
+			nh_.getParam("/global_params/isIndoor",isIndoor);
+ 			if(isIndoor)
+ 			{
+ 				xyz_gps(0)=lat;
+			 	xyz_gps(1)=lon;
+			 	xyz_gps(2)=0;
+ 	
+ 	
+		 	}			
 			ROS_INFO("lat=%f, lon=%f, oLat=%f, oLon=%f, x=%f, y=%f",lat,lon,origin_lat,origin_lon,xyz_gps(0),xyz_gps(1));
 
 		

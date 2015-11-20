@@ -12,7 +12,7 @@
 	</include>
 
 	<!-- insekf -->
-	<include file="$(find gcop_ros_est)/launch/insekf_mavros.launch">
+	<include file="$(find gcop_ros_est)/launch/insekf_mavros_indoor.launch">
 		<arg name="global_yaml" value="$(arg global_yaml)" />
 	</include>
 
