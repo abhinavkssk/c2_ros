@@ -21,7 +21,7 @@ private:
 
 	ros::Subscriber adp_path_sub;
 	ros::Publisher adp_start_pub;
-
+	ros::Time begin;
 	//rviz
 	ros::Publisher marker_pub;
 
@@ -52,10 +52,27 @@ public:
 		adp_start_pub.publish(isStart);
 
 		isBHVStopped = false;
+		begin = ros::Time::now();
 	}
 
 	void tick(){
 		//can implement a timer to time the matlab node,
+		if(!isBHVStopped && ros::Time::now().toSec()-begin.toSec() > 1800)
+		{
+			ROS_INFO("ADAPTIVE COMPLETED");
+			 //stop the matlab adp node
+                std_msgs::Bool isStart;
+                isStart.data = false;
+                adp_start_pub.publish(isStart);
+
+                isBHVStopped = true;
+//notify Captain
+                setMLCompleted(true);
+			ROS_INFO("[%s] time elapse %f",agentName.c_str(),ros::Time::now().toSec()-begin.toSec());
+
+		}
+			ROS_INFO("[%s] time elapse %f",agentName.c_str(),ros::Time::now().toSec()-begin.toSec());
+
 	}
 
 	void onStop(){
@@ -132,8 +149,16 @@ int main (int argc, char ** argv)
 {
 	ros::init(argc, argv, C2::C2Agent(C2::C2Agent::MBHV_ADAPTIVESAMPLER).toString());
 	ros::NodeHandle nh;
+ros::Rate loop_rate(1); //default to 1Hz
 	C2::MBHV_AdaptiveSampling c(C2::C2Agent(C2::C2Agent::MBHV_ADAPTIVESAMPLER).toString(),1,nh);
-	c.spin();
+	 //iterate
+        while (ros::ok())
+        {
+                c.tick();
+                ros::spinOnce();
+                loop_rate.sleep();
+        }
+
 
 	return 0;
 }

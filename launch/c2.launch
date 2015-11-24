@@ -14,6 +14,6 @@
   <node name="mbhv_waypoint_node" pkg="c2_ros" type="mbhv_waypoint_node" output="screen" clear_params="true" required="true" />  
   <node name="mbhv_loiter_node" pkg="c2_ros" type="mbhv_loiter_node" output="screen" clear_params="true" required="true" />  
   <node name="captain_node" pkg="c2_ros" type="captain_node" output="screen" clear_params="true" required="true" /> 
-
+  <node name="safety_officer_node" pkg="c2_ros" type="safety_officer_node" output="screen" clear_params="true" required="true" />
   
 </launch>

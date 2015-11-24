@@ -319,6 +319,10 @@ public:
 			{
 				abort_ml.m_state.pose.position.x = home_Pos.x;
 				abort_ml.m_state.pose.position.y = home_Pos.y;
+				abort_ml.m_state.pose.orientation.x = 0;
+				abort_ml.m_state.pose.orientation.y = 0;
+				abort_ml.m_state.pose.orientation.z = 0;
+				abort_ml.m_state.pose.orientation.w = 1;
 				abort_ml.m_state.twist.linear.x = default_speed;
 				abort_ml.m_pt_radius = default_mpt_radius;
 				ROS_INFO("[%s] Abort to home location %f %f",agentName.c_str(),home_Pos.x,home_Pos.y);
@@ -327,6 +331,10 @@ public:
 			{
 				abort_ml.m_state.pose.position.x = m_startPos.x;
 				abort_ml.m_state.pose.position.y = m_startPos.y;
+				abort_ml.m_state.pose.orientation.x = 0;
+				abort_ml.m_state.pose.orientation.y = 0;
+				abort_ml.m_state.pose.orientation.z = 0;
+				abort_ml.m_state.pose.orientation.w = 1;
 				abort_ml.m_state.twist.linear.x = default_speed;
 				abort_ml.m_pt_radius = default_mpt_radius;
 				ROS_INFO("[%s] Abort to start position %f %f",agentName.c_str(),m_startPos.x,m_startPos.y);
