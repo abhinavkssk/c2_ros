@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include "c2_ros/mission.h"
 #include "c2_ros_msgs/C2_BHV.h"
+#include "c2_ros_msgs/C2_STATE.h"
 #include "c2_ros_msgs/BHVProposer.h"
 #include "c2_ros/C2_CMD.h"
 #include "c2_ros/c2_state.h"
@@ -65,6 +66,7 @@ protected:
 	ros::Subscriber odom_est_sub;
 	ros::Subscriber bhv_propose_sub;
 	ros::Publisher bhv_request_pub;
+	ros::Publisher state_pub;
 
 	C2::Planner_Map *pm;
 
@@ -191,7 +193,9 @@ private:
 			ROS_INFO("[%s]: [%s]->[%s]",agentName.c_str(),C2::C2_StateName[(int)myState],C2::C2_StateName[(int)state]);
 			myState = state;
 			//broadcast the captain's state
-
+			c2_ros_msgs::C2_STATE c_state;
+			c_state.state = (int)myState;
+			state_pub.publish(c_state);
 			return true;
 		}else return false;
 
@@ -317,6 +321,7 @@ public:
 				abort_ml.m_state.pose.position.y = home_Pos.y;
 				abort_ml.m_state.twist.linear.x = default_speed;
 				abort_ml.m_pt_radius = default_mpt_radius;
+				ROS_INFO("[%s] Abort to home location %f %f",agentName.c_str(),home_Pos.x,home_Pos.y);
 			}
 			else if(request.command == c2_ros::C2_CMD::Request::ABORT_TO_START_POS)
 			{
@@ -324,6 +329,7 @@ public:
 				abort_ml.m_state.pose.position.y = m_startPos.y;
 				abort_ml.m_state.twist.linear.x = default_speed;
 				abort_ml.m_pt_radius = default_mpt_radius;
+				ROS_INFO("[%s] Abort to start position %f %f",agentName.c_str(),m_startPos.x,m_startPos.y);
 			}
 			else
 			{
@@ -511,6 +517,7 @@ public:
 		//pub and sub to behavior request and proposal
 		bhv_propose_sub = nh_.subscribe("/captain/bhv_propose",100, &Captain::bhv_propose_callback,this);
 		bhv_request_pub = nh_.advertise<c2_ros_msgs::C2_BHV>("/captain/bhv_request",100);
+		state_pub = nh_.advertise<c2_ros_msgs::C2_STATE>("/captain/state",100);
 	}
 
 	~Captain(){

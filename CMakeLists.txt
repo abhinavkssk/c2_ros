@@ -136,6 +136,7 @@ add_executable(mbhv_adaptivesampling_node src/mbhv_adaptivesampling.cpp ${B_FILE
 add_executable(mbhv_abort_node src/mbhv_abort.cpp ${B_FILES})
 add_executable(mbhv_loiter_node src/mbhv_loiter.cpp ${B_FILES})
 add_executable(pilot_simulated_node src/pilot_simulated.cpp ${B_FILES})
+add_executable(safety_officer_node src/safety_officer.cpp ${B_FILES})
 add_executable(vehicle_simulator_node src/vehicle_simulator.cpp)
 
 ## Add cmake target dependencies of the executable/library
@@ -146,6 +147,7 @@ add_executable(vehicle_simulator_node src/vehicle_simulator.cpp)
  add_dependencies(mbhv_adaptivesampling_node c2_ros_msgs_gencpp ${c2_ros_EXPORTED_TARGETS} c2_ros_gencpp)
  add_dependencies(mbhv_loiter_node c2_ros_msgs_gencpp ${c2_ros_EXPORTED_TARGETS} c2_ros_gencpp)
  add_dependencies(pilot_simulated_node c2_ros_msgs_gencpp ${c2_ros_EXPORTED_TARGETS} c2_ros_gencpp )
+ add_dependencies(safety_officer_node c2_ros_msgs_gencpp ${c2_ros_EXPORTED_TARGETS} c2_ros_gencpp )
  add_dependencies(vehicle_simulator_node c2_ros_msgs_gencpp ${c2_ros_EXPORTED_TARGETS} c2_ros_gencpp)
 
 ## Specify libraries to link a library or executable target against
@@ -157,6 +159,7 @@ target_link_libraries(mbhv_adaptivesampling_node ${catkin_LIBRARIES})
 target_link_libraries(mbhv_abort_node ${catkin_LIBRARIES})
 target_link_libraries(mbhv_loiter_node ${catkin_LIBRARIES})
 target_link_libraries(pilot_simulated_node ${catkin_LIBRARIES})
+target_link_libraries(safety_officer_node ${catkin_LIBRARIES})
 target_link_libraries(vehicle_simulator_node ${catkin_LIBRARIES})
 
 

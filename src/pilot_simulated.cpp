@@ -81,13 +81,14 @@ public:
 				if(poseCnt < poseToRun.trajectory.size())
 				{
 					curMP = poseToRun.trajectory.at(poseCnt);
+					poseCnt++;
 					ROS_INFO("Navigating to x=%f, y=%f",curMP.pose.position.x,curMP.pose.position.y);
 
 					//check vehicle's side angles
 					isCurMPReached = checkDistAngle();
 					if(isCurMPReached) return;
 
-					poseCnt++;
+
 				}
 				else
 				{
@@ -142,7 +143,7 @@ public:
 			ac.desired_speed = speedSP;
 			ac.desired_bearing = bearingSP;
 			ac_pub.publish(ac);
-			ROS_INFO("[%s]: desired_bearing = %f, curBearing = %f, dist=%f",agentName.c_str(),bearingSP,curBearing,dist);
+			ROS_INFO("[%s]: desired_bearing = %f, curBearing = %f, dist=%f x=%f y=%f",agentName.c_str(),bearingSP,curBearing,dist,mp.pose.position.x,mp.pose.position.y);
 
 			return false;
 		}
@@ -157,7 +158,7 @@ public:
 		float dist = asco::Utils::getDist2D(curPos, curMP.pose);
 		float bearingDiff = fabs(curBearing - angle);
 
-		ROS_INFO("angleToNextPos=%f bearing=%f angleDiff=%f",angle,curBearing,bearingDiff);
+		ROS_INFO("angleToNextPos=%f bearing=%f angleDiff=%f, %f %f",angle,curBearing,bearingDiff,curMP.pose.position.x,curMP.pose.position.y);
 
 		if(bearingDiff > 45 && bearingDiff < 315) {
 			//advance at most two points
@@ -167,10 +168,11 @@ public:
 					curMP = poseToRun.trajectory.at(poseCnt);
 					poseCnt++;
 					cnt++;
-					ROS_INFO("too close for comfort,waypoint incremented by 1");
+					ROS_INFO("distance = %f, too close for comfort,waypoint incremented by 1 x=%f y=%f",dist,curMP.pose.position.x,curMP.pose.position.y);
 				}else if (poseCnt == poseToRun.trajectory.size()){
 					return true;
 				}
+				dist = asco::Utils::getDist2D(curPos, curMP.pose);
 			}
 		}
 		return false;
@@ -187,7 +189,11 @@ public:
 
 	void newMissionPointAvailable(c2_ros_msgs::Trajectory traj, bool isOverwrite)
 	{
-		ROS_INFO("Mission point received by [%s]",agentName.c_str());
+		ROS_INFO("Mission point received by [%s]:",agentName.c_str());
+		c2_ros_msgs::Trajectory::_trajectory_type::iterator it;
+		for(it = traj.trajectory.begin(); it != traj.trajectory.end(); it++){
+			ROS_INFO("[%s] pose %f %f",agentName.c_str(),(*it).pose.position.x,(*it).pose.position.y);
+		}
 		if(isCompleted)
 		{
 			poseToRun.trajectory = c2_ros_msgs::Trajectory::_trajectory_type(traj.trajectory);
@@ -208,6 +214,7 @@ public:
 				c2_ros_msgs::Trajectory::_trajectory_type::iterator it;
 				for(it = traj.trajectory.begin(); it != traj.trajectory.end(); it++){
 					poseToRun.trajectory.push_back(*it);
+					//ROS_INFO("[%s] pose %f %f",agentName.c_str(),(*it).pose.position.x,(*it).pose.position.y);
 				}
 			}
 		}

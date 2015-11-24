@@ -11,6 +11,7 @@ public:
 	enum AgentEnum {
 		CAPTAIN = 0,
 		PILOT,
+		SAFETY_OFFICER,
 		MBHV_ABORTER,
 		MBHV_ADAPTIVESAMPLER,
 		MBHV_WAYPOINTER,
@@ -28,6 +29,7 @@ public:
 		enumMap = {
 				{"CAPTAIN",C2::C2Agent::CAPTAIN},
 				{"PILOT",C2::C2Agent::PILOT},
+				{"SAFETY_OFFICER",C2::C2Agent::SAFETY_OFFICER},
 				{"MBHV_ABORTER",C2::C2Agent::MBHV_ABORTER},
 				{"MBHV_ADAPTIVESAMPLER",C2::C2Agent::MBHV_ADAPTIVESAMPLER},
 				{"MBHV_WAYPOINTER",C2::C2Agent::MBHV_WAYPOINTER},
@@ -82,6 +84,8 @@ public:
 			return "CAPTAIN";
 		case PILOT:
 			return "PILOT";
+		case SAFETY_OFFICER:
+			return "SAFETY_OFFICER";
 		case MBHV_ABORTER:
 			return "MBHV_ABORTER";
 		case MBHV_ADAPTIVESAMPLER:

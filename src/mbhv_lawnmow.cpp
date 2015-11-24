@@ -1,6 +1,8 @@
 #include <ros/ros.h>
+#include <math.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_datatypes.h>
+#include <tf/transform_broadcaster.h>
 #include <c2_ros/c2_agent.h>
 #include <c2_ros/planner.h>
 #include <asco_utils/utils.h>
@@ -34,15 +36,7 @@ public:
 		if (!nh_.getParam("/global_params/odometry_topic_name",odm_name)) odm_name = "/odometry/filtered";
 		odom_est_sub = nh_.subscribe(odm_name,1, &C2::MBHV_LawnMow::odom_est,this);
 
-		//TODO: since the mission planning hasn't have a way to specify the parameters required for the LM planner, just read them from the parameter server for now.
-		//obtain all the parameters for the LM planning.
-		if (!nh_.getParam("/c2_params/lm_xlength",xLength))
-		{
-			ROS_WARN("Please Specify the lawnmov parameter for [%s] in /c2_params",agentName.c_str());
-		}
-		nh_.getParam("/c2_params/lm_ylength",yLength);
-		nh_.getParam("/c2_params/lm_mowewidth",moweWidth);
-		nh_.getParam("/c2_params/lm_mowebearing",moweBearing);
+		getParams();
 	}
 
 	~MBHV_LawnMow(){
@@ -60,6 +54,19 @@ public:
 	void onGoalReceived(){
 		isMLCompleted = false;
 		ml = getMissionLeg();
+		getParams();
+	}
+
+	void getParams(){
+		//TODO: since the mission planning hasn't have a way to specify the parameters required for the LM planner, just read them from the parameter server for now.
+		//obtain all the parameters for the LM planning.
+		if (!nh_.getParam("/c2_params/lm_xlength",xLength))
+		{
+			ROS_WARN("Please Specify the lawnmowe parameter for [%s] in /c2_params",agentName.c_str());
+		}
+		nh_.getParam("/c2_params/lm_ylength",yLength);
+		nh_.getParam("/c2_params/lm_mowewidth",moweWidth);
+		nh_.getParam("/c2_params/lm_mowebearing",moweBearing);
 	}
 
 	void tick(){
@@ -73,17 +80,41 @@ public:
 			else
 			{
 				//only one set of points to send
-				isMLCompleted = true;
 				ROS_INFO("[%s] lm params:x=%f y=%f xlength=%f ylength=%f mwidth=%f mbearing=%f",agentName.c_str(),
 						ml.m_state.pose.position.x,ml.m_state.pose.position.y,xLength,yLength,moweWidth,moweBearing);
 				c2_ros_msgs::Trajectory traj = generateLMPath();
-				//logging
-				for(int i=0;i<traj.trajectory.size();i++)
-				{
-					c2_ros_msgs::State3D pt = traj.trajectory.at(i);
-					ROS_INFO("[%s] lm | %f %f %f %f %f",agentName.c_str(),pt.pose.position.x,pt.pose.position.y,pt.twist.linear.x,pt.twist.linear.y,pt.twist.angular.z);
+
+
+				if(traj.trajectory.size() > 0){
+
+					isMLCompleted = true;
+
+					//check which end point is the closest to the current position;
+					double dist1 = asco::Utils::getDist2D(curPos,traj.trajectory.begin()->pose);
+					double dist2 = asco::Utils::getDist2D(curPos,traj.trajectory.end()->pose);
+
+					if(dist2 < dist1){
+						//flip the order
+						ROS_DEBUG("path order reversed...");
+						std::reverse(traj.trajectory.begin(),traj.trajectory.end());
+					}
+
+					//compute the orientation
+					computeOrientation(traj);
+
+					//logging
+					for(int i=0;i<traj.trajectory.size();i++)
+					{
+						c2_ros_msgs::State3D pt = traj.trajectory.at(i);
+						ROS_INFO("[%s] lm | %f %f %f %f %f %f",agentName.c_str(),pt.pose.position.x,pt.pose.position.y,tf::getYaw(pt.pose.orientation)/M_PI*180,pt.twist.linear.x,pt.twist.linear.y,pt.twist.angular.z);
+					}
+					sendMPoint(traj);
 				}
-				sendMPoint(traj);
+				else
+				{
+					ROS_ERROR("[%s] failed to plan a lm path!", agentName.c_str());
+					setMLCompleted(false);
+				}
 			}
 		}
 	}
@@ -108,18 +139,20 @@ public:
 		float halfXLength = xLength/2.0;
 		float halfYLength = yLength/2.0;
 		c2_ros_msgs::State3D TL,TR,BL,BR;
+
 		//copy radius and linear speed from the misison leg
 		TL.m_pt_radius = ml.m_pt_radius;
 		TR.m_pt_radius = ml.m_pt_radius;
 		BL.m_pt_radius = ml.m_pt_radius;
 		BR.m_pt_radius = ml.m_pt_radius;
-                
-                //copy the default orientation
+
+		//copy the default orientation
 		TL.pose.orientation = ml.m_state.pose.orientation;
 		TR.pose.orientation = ml.m_state.pose.orientation;
 		BL.pose.orientation = ml.m_state.pose.orientation;
 		BR.pose.orientation = ml.m_state.pose.orientation;
 
+		//copy the default twist
 		TL.twist = ml.m_state.twist;
 		TR.twist = ml.m_state.twist;
 		BL.twist = ml.m_state.twist;
@@ -278,6 +311,18 @@ public:
 		return p_path;
 
 	}
+
+	void computeOrientation(c2_ros_msgs::Trajectory& traj)
+	{
+		//compute the orientation of path segments and update its State3D orientation field
+		for(int i=0; i<traj.trajectory.size()-1; i++)
+		{
+			double yaw = atan2((traj.trajectory[i+1].pose.position.y - traj.trajectory[i].pose.position.y),(traj.trajectory[i+1].pose.position.x - traj.trajectory[i].pose.position.x));
+			geometry_msgs::Quaternion y_quat = tf::createQuaternionMsgFromYaw(yaw);
+			traj.trajectory[i].pose.orientation = y_quat;
+		}
+	}
+
 };
 
 }
