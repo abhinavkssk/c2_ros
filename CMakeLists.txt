@@ -152,6 +152,7 @@ add_executable(vehicle_simulator_node src/vehicle_simulator.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(c2_ros ${catkin_LIBRARIES})
+#target_link_libraries(captain_node ${catkin_LIBRARIES} ${TINYXML_LIBRARIES} /opt/ros/indigo/lib/libswiftnav-static.a)
 target_link_libraries(captain_node ${catkin_LIBRARIES} ${TINYXML_LIBRARIES} ${SWIFTNAV})
 target_link_libraries(mbhv_waypoint_node ${catkin_LIBRARIES})
 target_link_libraries(mbhv_lawnmow_node ${catkin_LIBRARIES})

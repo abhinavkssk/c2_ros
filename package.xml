@@ -48,6 +48,8 @@
   <build_depend>geographic_msgs</build_depend>
   <build_depend>message_generation</build_depend>
   <build_depend>c2_ros_msgs</build_depend>
+  <build_depend>asco_utils</build_depend>
+  <build_depend>swiftnav</build_depend>
 
   <run_depend>roscpp</run_depend>
   <run_depend>rospy</run_depend>
@@ -57,6 +59,7 @@
   <run_depend>geographic_msgs</run_depend>
   <run_depend>message_generation</run_depend>
   <run_depend>c2_ros_msgs</run_depend>
+  <run_depend>swiftnav</run_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
